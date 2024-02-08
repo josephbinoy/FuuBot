@@ -11,7 +11,7 @@ The host rotation is managed with a queue. Players are added to the queue when j
 ## Features I removed:
 - Completely Removed Discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7
 - Removed typescript transpiled javascript files (dist folder) as I plan to add more features to this bot in the future. Indirectly added a couple extra steps in setup process.
-
+- Removed unnecessary files, folders.
 # Command List
 
 ## Player Commands
