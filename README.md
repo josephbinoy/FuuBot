@@ -1,9 +1,17 @@
 
-# osu-ahr
+# jpn-autohost (minor tweaks to Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
 
-Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer.  
+An Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer.  
 The host rotation is managed with a queue. Players are added to the queue when joining a multiplayer lobby and are sent to the back of the queue once their beatmap has been played.
 
+## Features I added:
+- ~~Banned top 100 most overplayed maps in 3-5* lobbies (Looking at you sound chimera and bass slut)~~ (Making it japanese-only ended up filtering out most of the garbage)
+- Only Japanese maps allowed Edit: Added Instrumental maps
+
+## Features I removed:
+- Completely Removed Discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7
+- Removed typescript transpiled javascript files (dist folder) as I plan to add more features to this bot in the future. Indirectly added a couple extra steps in setup process.
+- Removed unnecessary files, folders.
 # Command List
 
 ## Player Commands
@@ -58,37 +66,13 @@ The host rotation is managed with a queue. Players are added to the queue when j
 |`*denylist add [username]` | Blacklists a player. | `*denylist add bad_guy` |
 |`*denylist remove [username]` | Removes a player from blacklist. | `*denylist remove bad_guy` |
 
-Note: Administrator commands are also available on the cli and discord bot. Here are examples of Administrator commands using cli and discord:
+Note: Administrator commands are also available on the cli. Here are examples of Administrator commands using cli:
 
 Cli
 
 ```text
 #mp_123456 > *keep size 16
 ```
-
-Discord
-
-```text
-/say *keep size 16
-```
-
-# Recent Changes
-
-## 1.6.1
-
-+ Improve texts and error messages
-  + Fixed grammatical errors and inconsistencies in displayed text
-  + This work was led by [Xayanide](https://github.com/Xayanide). Thanks!
-+ Fixed problem with cli waiting for input when lobby is closed
-+ Log files are now stored separately for chat-related and system-related files.
-
-## 1.6.0
-
-+ Enviroment Variable Supports
-  + Almost all configs that can be set in local.json can also be set from environment variables.
-  + The environment variable name should be in the form `ahr_[category]_[config_name]`.
-  + Improve texts & grammaticalization
-+ Fixed discord Permission Issue.
 
 # Setup
 
@@ -97,17 +81,23 @@ Discord
 + [Node.js](https://nodejs.org/) (Version 16.11.1 or Higher)
 + [Git](https://git-scm.com/)
 
-1. Clone this repo and install libraries
+2. Clone this repo
 
 ```text
-> git clone https://github.com/Meowhal/osu-ahr.git
-> cd osu-ahr
+> git clone https://github.com/josephbinoy/jpn-autohost
+> cd jpn-autohost
+```
+3. Install npm dependencies and typescript. Then compile.
+
+```text
 > npm install
+> npm install typescript
+> tsc
 ```
 
-1. Create a file `./config/local.json`, use `./config/default.json` as template.
-1. Get irc password from [osu! IRC Authentication](https://osu.ppy.sh/p/irc)
-1. Enter your account ID and irc password to `./config/local.json` as in the following example.
+4. Create a file `./config/local.json`, use `./config/default.json` as template.
+5. Get irc password from [osu! IRC Authentication](https://osu.ppy.sh/p/irc)
+6. Enter your account ID and irc password to `./config/local.json` as in the following example.
 
 ```json
 {
@@ -122,8 +112,8 @@ Discord
 }
 ```
 
-1. Configure the bot (Optional). See the [Configuration](#configuration) section for details.
-1. Launch the bot
+7. Configure the bot (Optional). See the [Configuration](#configuration) section for details.
+8. Launch the bot
 
 ```text
 > npm run start
@@ -140,9 +130,6 @@ MainMenu Commands
   [quit] Quit the application.
 
 > make 5-6* | auto host rotation
-```
-
-Note: You can also run your bot on discord. See the [Discord Integration](#discord-integration) section for details.
 
 # Configuration
 
@@ -432,119 +419,3 @@ Since this is a long time, and may cause problems for other users, the lobby wil
 If `close now` is issued in the console, the `!mp close` command will be sent and the lobby will be closed immediately.  
 If a number of seconds is specified as an argument, such as `close 30`, the lobby will wait until a password is set and for everyone to leave, then the lobby will close after the specified number of seconds has passed.
 If `close` is issued, the lobby will be closed after the password is set and everyone has left.
-
-# Discord Integration
-
-You can control AHR lobbies via a Discord bot, which allows you to access in-game chat and execute lobby control commands from Discord channels.
-
-## Discord Setup
-
-[discord.js](https://discord.js.org/) requires [Node.js](https://nodejs.org/ja/) 16.6 or higher to use, so make sure you're up to date. To check your Node version, use node -v in your terminal or command prompt, and if it's not high enough, update it.
-
-## Creating your bot
-
-[Setting up a bot application](https://discordjs.guide/preparations/setting-up-a-bot-application.html#creating-your-bot)
-
-Follow the link above to create a bot and obtain the token for the bot.
-The obtained token should be written in `./config/local.json` as follows:
-
-```json
-{
-  "irc": {
-    "server": "irc.ppy.sh",
-    "nick": "------",
-    "opt": {
-      "port": 6667,
-      "password": "-------",
-    }
-  },
-  "Discord": {
-    "token": "THISiSsAMPLEtOKENasdfy.X-hvzA.Ovy4MCQywSkoMRRclStW4xAYK7I"
-  }
-}
-```
-
-## Startup
-
-Start the bot with the following command:
-
-```text
-npm run start:discord
-```
-
-After successful activation, a Discord Bot invitation link will appear in the terminal. Click on it to invite it to your guild.
-
-```text
-[12:00:00.000][INFO] discord - discord bot is ready.
-[12:00:00.100][INFO] discord - invite link => https://discord.com/api/oauth2/authorize?client_id=123&scope=bot+applications.commands&permissions=268435472
-```
-
-[**Caution**] For security reasons, please do not make this bot a public bot. Any problems that may arise are entirely your responsibility.
-
-## Role settings
-
-When a bot is invited to a guild, the `ahr-admin` role is created. Only users with this role will be able to manage the lobby. You should assign this role to your own account.
-
-## Make a new lobby
-
-![how to make a lobby](https://raw.githubusercontent.com/Meowhal/osu-ahr/images/screenshot/make.png)
-
-You can make a lobby by executing the `/make (lobby name)` command in your guild. (You need to have the `ahr-admin` role to run this command). If the command succeeds, a tournament lobby will be created in OSU multiplayer, and a `#matches` channel will be created for your guild.
-
-You can make up to four lobbies at the same time, but the bot can only send ten messages every five seconds.
-It is recommended to keep the number of lobbies to one or two, as each additional lobby increases the delay in sending messages for the bot.
-
-## Check match Status
-
-![match status panel](https://raw.githubusercontent.com/Meowhal/osu-ahr/images/screenshot/matches.png)
-
-The status of each match can be check in the information panel on the "matches" channel. The information panel will be automatically updated as needed.
-
-## Transfer ingame chat
-
-You can transfer the in-game chat to your guild's channel by pressing the "Start Transfer" button at the bottom of the information panel. When you press that button, a bridge channel will be created starting with "#mp_", where you can see the in-game chat and some logs.
-
-## Join an existing lobby
-
-If the bot has been terminated due to a glitch or some other reason, you can use the `/enter` command after restarting to resume lobby management. The command requires `lobby_id`. It is the numerical part of "#mp_12345".
-
-`/enter lobby_id:123456`
-
-If the guild still has the bridge channel, you can run the `/enter` command without the `lobby_id` in the bridge channel.
-
-## Chat forwarding
-
-The `/say [message]` command is used to forward a message to the in-game chat. This command takes the `message` to be forwarded and the `lobby_id` as options, but you can omit the `lobby_id` if you are in a bridge channel. It can also be used to issue tournament commands such as `!mp start`, and owner commands such as `*regulation`.
-
-```text
-/say message:hello lobby_id:123456
-/say message:!mp start 120
-/say message:*regulation max_star=8.99
-```
-
-## Slash Commands
-
-|command|desc|ex|
-|:--|:--|:--|
-|`/make [lobbyName]`| Make a tournament lobby. |`/make 4.00-5.99 auto host rotation`|
-|`/enter (lobbyId)`| Enter the lobby. |`/enter` or `/enter 12345`|
-|`/say [message] (lobbyId)`| Send a message.|`/say hello!` or `/say !mp start`|
-|`/info (lobbyId)`| Shows the status of the lobby.|`/info` or `/info 12345`|
-|`/quit (lobbyId)`| Quit managing the lobby. |`/quit` or `/quit 12345`|
-|`/close (lobbyId)`| Close the lobby. |`/close` or `/close 12345`|
-
-+ Arguments with [] are required, while () are optional.
-
-# Special thanks
-
-+ [Meowhalfannumber1](https://github.com/Meowhalfannumber1)
-  + He made great suggestions.
-+ [Metacinnabar](https://github.com/Metacinnabar)
-  + He helped me with the Japanese translation.
-+ [ZeroPyrozen](https://github.com/ZeroPyrozen)
-  + He helped me improve the map checker.
-+ [qqzzy](https://osu.ppy.sh/users/10911588)
-  + He gives me various insights.
-  + <https://github.com/jramseygreen/osu_bot_framework-v3>
-+ [Xayanide](https://github.com/Xayanide)
-  + He made various contributions to the project.
