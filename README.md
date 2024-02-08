@@ -130,6 +130,7 @@ MainMenu Commands
   [quit] Quit the application.
 
 > make 5-6* | auto host rotation
+```
 
 # Configuration
 
@@ -156,7 +157,6 @@ local.json
       "password": "123456"
     }
   },
-...
 ```
 
 env
