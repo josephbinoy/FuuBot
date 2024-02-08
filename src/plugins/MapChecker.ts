@@ -194,14 +194,17 @@ export class MapChecker extends LobbyPlugin {
         this.logger.info(`The target beatmap has already been changed. Checked beatmap: ${mapId}, Current: ${this.checkingMapId}`);
         return;
       }
-
       const r = this.validator.RateBeatmap(map);
       if (r.rate > 0) {
-        this.rejectMap(r.message, true);
-      } else {
+        if(r.rate === 69)
+          this.rejectMap(r.message, false);
+        else
+          this.rejectMap(r.message, true);
+      } 
+      else 
         this.acceptMap(map);
-      }
-    } catch (e: any) {
+      } 
+      catch (e: any) {
       if (e instanceof FetchBeatmapError) {
         switch (e.reason) {
           case FetchBeatmapErrorReason.FormatError:
@@ -297,46 +300,48 @@ export class MapValidator {
 
   RateBeatmap(map: Beatmap): { rate: number, message: string } {
     let rate = 0;
-    const violationMsgs = [];
+    let violationMsg = "";
 
     const mapmode = PlayMode.from(map.mode);
     if (mapmode !== this.option.gamemode && this.option.gamemode !== null) {
-      violationMsgs.push(`the gamemode is not ${this.option.gamemode.officialName}.`);
+      violationMsg=`the gamemode is not ${this.option.gamemode.officialName}.`;
       rate += 1;
     }
 
-    if (this.option.star_min > 0 && map.difficulty_rating < this.option.star_min) {
+    else if (this.option.star_min > 0 && map.difficulty_rating < this.option.star_min) {
       rate += parseFloat((this.option.star_min - map.difficulty_rating).toFixed(2));
-      violationMsgs.push('the beatmap star rating is lower than the allowed star rating.');
+      violationMsg='the beatmap star rating is lower than the allowed star rating.';
     }
 
-    if (this.option.star_max > 0 && this.option.star_max < map.difficulty_rating) {
+    else if (this.option.star_max > 0 && this.option.star_max < map.difficulty_rating) {
       rate += parseFloat((map.difficulty_rating - this.option.star_max).toFixed(2));
-      violationMsgs.push('the beatmap star rating is higher than the allowed star rating.');
+      violationMsg='the beatmap star rating is higher than the allowed star rating.';
     }
 
-    if (this.option.length_min > 0 && map.total_length < this.option.length_min) {
+    else if (this.option.length_min > 0 && map.total_length < this.option.length_min) {
       rate += (this.option.length_min - map.total_length) / 60.0;
-      violationMsgs.push('the beatmap length is shorter than the allowed length.');
+      violationMsg='the beatmap length is shorter than the allowed length.';
     }
 
-    if (this.option.length_max > 0 && this.option.length_max < map.total_length) {
+    else if (this.option.length_max > 0 && this.option.length_max < map.total_length) {
       rate += (map.total_length - this.option.length_max) / 60.0;
-      violationMsgs.push('the beatmap length is longer than the allowed length.');
+      violationMsg='the beatmap length is longer than the allowed length.';
     }
 
+    //check if japanese or instrumental
+    // !containsJapanese(map.beatmapset?.title_unicode) || !checkTags(map.beatmapset?.tags) for robustness
+    else if((map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental')){
+      rate+=69;
+      violationMsg='only Japanese and Instrumental maps are allowed in the lobby!';
+    }
     if (rate > 0) {
       let message;
       const mapDesc = `[${map.url} ${map.beatmapset?.title}] (Star rating: ${map.difficulty_rating}, Length: ${secToTimeNotation(map.total_length)})`;
-      if (violationMsgs.length === 1) {
-        message = `${mapDesc} was rejected because ${violationMsgs[0]}`;
-      } else {
-        message = `${mapDesc} was rejected because of following reason:\n${violationMsgs.map(m => `- ${m}`).join('\n')}`;
-      }
+      message = `${mapDesc} was rejected because ${violationMsg}`;
       return { rate, message };
-    } else {
+    } 
+    else    
       return { rate: 0, message: '' };
-    }
   }
 
   GetDescription(): string {
@@ -371,6 +376,16 @@ export class MapValidator {
     return [d_star, d_length, d_gamemode].filter(d => d !== '').join(', ');
   }
 }
+
+// function containsJapanese(text: string): boolean {
+//   const regex = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
+//   return regex.test(text);
+// }
+
+// function checkTags(text: string): boolean {
+//   const allowedTags=['japanese', 'jpop', 'jrock', 'vn', 'j-pop', 'anime', 'j-rock'];
+//   return allowedTags.some(tag => text.includes(tag));
+// }
 
 function validateMapCheckerOption(option: MapCheckerUncheckedOption): option is Partial<MapCheckerOption> {
   if (option.enabled !== undefined) {
