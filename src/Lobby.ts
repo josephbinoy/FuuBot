@@ -299,10 +299,8 @@ export class Lobby {
     this.transferHostTimeout.start(this.option.transferhost_timeout_ms);
     if (user.id !== 0) {
       this.SendMessage(`!mp host #${user.id}`);
-      this.SendMessage(`!mp size 8`);
     } else {
       this.SendMessage(`!mp host ${user.name}`);
-      this.SendMessage(`!mp size 8`);
     }
   }
 
