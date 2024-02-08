@@ -226,7 +226,7 @@ export class OahrCli extends OahrBase {
     logger.info('Connecting to osu!Bancho...');
     this.client.once('registered', () => {
       logger.info('Connected. :D');
-      console.log('\n=== Welcome to osu-ahr ===');
+      console.log('\n=== Welcome to jpn-autohost ===');
       console.log(mainMenuCommandsMessage);
       r.setPrompt(this.prompt);
       r.prompt();
