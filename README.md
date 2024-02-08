@@ -9,7 +9,7 @@ The host rotation is managed with a queue. Players are added to the queue when j
 - Only Japanese maps allowed Edit: Added Instrumental maps
 
 ## Features I removed:
-- Completely dismantled discord integration as I'm using a raspberry pi 4 to run the bost 24/7
+- Completely dismantled discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7
 
 # Command List
 
