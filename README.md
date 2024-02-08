@@ -121,7 +121,7 @@ starting up...
 Connecting to Osu Bancho ...
 Connected :D
 
-=== Welcome to osu-ahr ===
+=== Welcome to jpn-autohost ===
 
 MainMenu Commands
   [make <Lobby_name>] Make a lobby.  e.g. 'make 5* auto host rotation'
@@ -130,6 +130,7 @@ MainMenu Commands
   [quit] Quit the application.
 
 > make 5-6* | auto host rotation
+```
 
 # Configuration
 
@@ -156,7 +157,6 @@ local.json
       "password": "123456"
     }
   },
-...
 ```
 
 env
