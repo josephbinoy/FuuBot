@@ -5,11 +5,12 @@ An Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer.
 The host rotation is managed with a queue. Players are added to the queue when joining a multiplayer lobby and are sent to the back of the queue once their beatmap has been played.
 
 ## Features I added:
-- ~~Removed top 100 most overplayed maps in 3-5* lobbies (Looking at you sound chimera and bass slut)~~ (Making it japanese-only ended up filtering out most of the garbage)
+- ~~Banned top 100 most overplayed maps in 3-5* lobbies (Looking at you sound chimera and bass slut)~~ (Making it japanese-only ended up filtering out most of the garbage)
 - Only Japanese maps allowed Edit: Added Instrumental maps
 
 ## Features I removed:
-- Completely dismantled discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7
+- Completely Removed Discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7
+- Removed typescript transpiled javascript files (dist folder) as I plan to add more features to this bot in the future. Indirectly added a couple extra steps in setup process.
 
 # Command List
 
