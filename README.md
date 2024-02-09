@@ -1,8 +1,5 @@
 
-# jpn-autohost (minor tweaks to Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
-
-An Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer.  
-The host rotation is managed with a queue. Players are added to the queue when joining a multiplayer lobby and are sent to the back of the queue once their beatmap has been played.
+# jpn-autohost: An Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
 
 ## Features I added:
 - Only Japanese maps and Instrumental maps allowed. 
@@ -11,21 +8,21 @@ The host rotation is managed with a queue. Players are added to the queue when j
 
 ## Features I removed:
 - Completely Removed Discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7
-- Removed typescript transpiled javascript files (dist folder) as I plan to add more features to this bot in the future. Indirectly added a couple extra steps in setup process.
-- Removed unnecessary files, folders.
+- Removed unnecessary directories and kept only the core files.
 # Command List
 
 ## Player Commands
 
 |Command|Description|
 |:--|:--|
-|`!queue`| Shows host queue.|
+|`!q`| Shows host queue.|
 |`!skip`| Triggers vote to skip current host.|
 |`!start`| Triggers vote start the match.|
 |`!abort`| Triggers vote abort the match. Use when the match is stuck.|
 |`!update`| Updates current selected map to the latest version. Use when a host picks an outdated map.|
-|`!regulations`| Shows any current regulations.|
+|`!r`| Shows any current regulations.|
 |`!rank`| Show player rank.|
+|`!mirror`| Request mirror link for current map.|
 
 ## Host Commands
 
