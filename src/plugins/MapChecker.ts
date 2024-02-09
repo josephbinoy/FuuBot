@@ -328,12 +328,21 @@ export class MapValidator {
       violationMsg='the beatmap length is longer than the allowed length.';
     }
 
-    //check if japanese or instrumental
-    // !containsJapanese(map.beatmapset?.title_unicode) || !checkTags(map.beatmapset?.tags) for robustness
-    else if((map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental')){
-      rate+=69;
-      violationMsg='only Japanese and Instrumental maps are allowed in the lobby!';
+    else if(isOverplayed(map.beatmapset?.title || '')){
+      rate=69;
+      violationMsg='the beatmap is overplayed. Please pick another map.';
     }
+
+    else if(map.beatmapset?.language?.name === 'Unspecified'){
+      if(!containsJapanese(map.beatmapset?.title_unicode) && !checkTags(map.beatmapset?.tags)){
+        rate=69;
+        violationMsg='only Japanese and Instrumental maps are allowed in the lobby! Please note that detection is not perfect, especially for graveyard maps';
+      }
+    }
+      else if((map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental')){
+        rate=69;
+        violationMsg='only Japanese and Instrumental maps are allowed in the lobby! Please note that detection is not perfect, especially for graveyard maps';
+      }
     if (rate > 0) {
       let message;
       const mapDesc = `[${map.url} ${map.beatmapset?.title}] (Star rating: ${map.difficulty_rating}, Length: ${secToTimeNotation(map.total_length)})`;
@@ -377,15 +386,22 @@ export class MapValidator {
   }
 }
 
-// function containsJapanese(text: string): boolean {
-//   const regex = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u;
-//   return regex.test(text);
-// }
+function containsJapanese(text: string): boolean {
+  const regex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/u;
+  return regex.test(text);
+}
 
-// function checkTags(text: string): boolean {
-//   const allowedTags=['japanese', 'jpop', 'jrock', 'vn', 'j-pop', 'anime', 'j-rock'];
-//   return allowedTags.some(tag => text.includes(tag));
-// }
+function checkTags(text: string): boolean {
+  const allowedTags=['japanese', 'jpop', 'jrock', 'vn', 'j-pop', 'anime', 'j-rock', 'instrumental'];
+  return allowedTags.some(tag => text.includes(tag));
+}
+
+function isOverplayed(text: string): boolean {
+  if (text==='')
+    return false;
+  const overplayed = ["RAISE MY SWORD", "Galaxy Collapse", "Sound Chimera", "Cycle Hit", "Grievous Lady", "Putin's Boner", "Flamewall", "FireLight (Neokontrol remix)", "true DJ MAG top ranker's song Zenpen", "Dance Number o Tomo ni", "Kokou no Sousei", "Everything will freeze", "Snow Drive", "Highscore", "Teo", "Shukusei!! Loli-Kami Requiem*"];
+  return overplayed.some(name=> text.includes(name));
+}
 
 function validateMapCheckerOption(option: MapCheckerUncheckedOption): option is Partial<MapCheckerOption> {
   if (option.enabled !== undefined) {
