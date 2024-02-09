@@ -30,6 +30,8 @@ export class MapChecker extends LobbyPlugin {
   checkingMapId: number = 0;
   numViolations: number = 0;
   validator: MapValidator;
+  override: boolean = false;
+  maxOverrides: number = 3;
 
   constructor(lobby: Lobby, option: Partial<MapCheckerUncheckedOption> = {}) {
     super(lobby, 'MapChecker', 'mapChecker');
@@ -88,6 +90,16 @@ export class MapChecker extends LobbyPlugin {
   private onReceivedChatCommand(command: string, param: string, player: Player): void {
     if (command === '!r' || command === '!regulation') {
       this.lobby.SendMessageWithCoolTime(this.getRegulationDescription(), 'regulation', 10000);
+      return;
+    }
+    if(command === '!override' && player.isHost) {
+      if(player.overrides < this.maxOverrides){
+        this.override = true;
+        player.overrides++;
+        this.lobby.SendMessage('Go ahead and pick the map you want to play!');
+      }
+      else
+        this.lobby.SendMessage('You have used up all your override chances.');
       return;
     }
 
@@ -194,7 +206,7 @@ export class MapChecker extends LobbyPlugin {
         this.logger.info(`The target beatmap has already been changed. Checked beatmap: ${mapId}, Current: ${this.checkingMapId}`);
         return;
       }
-      const r = this.validator.RateBeatmap(map);
+      const r = this.validator.RateBeatmap(map, this.override);
       if (r.rate > 0) {
         if(r.rate === 69)
           this.rejectMap(r.message, false);
@@ -258,6 +270,7 @@ export class MapChecker extends LobbyPlugin {
   private acceptMap(map: BeatmapCache): void {
     this.SendPluginMessage('validatedMap');
     this.lastMapId = this.lobby.mapId;
+    this.override=false;
     if (map.beatmapset) {
       const desc = this.getMapDescription(map, map.beatmapset);
       this.lobby.SendMessage(`!mp map ${this.lobby.mapId} ${this.option.gamemode.value} | ${desc}`);
@@ -298,7 +311,7 @@ export class MapValidator {
     this.logger = logger;
   }
 
-  RateBeatmap(map: Beatmap): { rate: number, message: string } {
+  RateBeatmap(map: Beatmap, override: boolean): { rate: number, message: string } {
     let rate = 0;
     let violationMsg = "";
 
@@ -333,15 +346,15 @@ export class MapValidator {
       violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml overplayed maps list]. Please pick another map.';
     }
 
-    else if(map.beatmapset?.language?.name === 'Unspecified'){
+    else if(!override && map.beatmapset?.language?.name === 'Unspecified'){
       if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
         rate=69;
-        violationMsg='only Japanese and Instrumental maps are allowed in the lobby! Please note that maps with missing/wrong metadata may be accidentally rejected.';
+        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing/wrong metadata may be accidentally rejected. In such a case, use the command !override (3 chances).';
       }
     }
-    else if((map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental')){
+    else if(!override && map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental'){
         rate=69;
-        violationMsg='only Japanese and Instrumental maps are allowed in the lobby! Please note that maps with missing/wrong metadata may be accidentally rejected.';
+        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing/wrong metadata may be accidentally rejected. In such a case, use the command !override (3 chances).';
     }
     if (rate > 0) {
       let message;

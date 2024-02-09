@@ -11,6 +11,7 @@ export class Player {
   mpstatus: MpStatuses = MpStatuses.None;
   laststat: StatResult | null = null;
   profile: UserProfile | null = null;
+  overrides: number = 0;
 
   constructor(name: string) {
     this.name = name;
