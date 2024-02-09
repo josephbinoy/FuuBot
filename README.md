@@ -6,7 +6,7 @@ The host rotation is managed with a queue. Players are added to the queue when j
 
 ## Features I added:
 - Only Japanese maps and Instrumental maps allowed. 
-- Banned overplayed maps. You can find the whole list here [here](https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/edit#gid=1130415120) (Credit to this [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)). I only picked the japanese and instrumental ones because other languages will be filtered out anyways.
+- Banned overplayed maps. You can find the whole list here [here](https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml) (Credit to this [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)).
 
 
 ## Features I removed:
