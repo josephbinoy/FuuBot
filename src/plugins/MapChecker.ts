@@ -328,21 +328,21 @@ export class MapValidator {
       violationMsg='the beatmap length is longer than the allowed length.';
     }
 
-    else if(isOverplayed(map.beatmapset?.title || '')){
+    else if(isOverplayed(map.beatmapset?.title || '', map.beatmapset_id || 0)){
       rate=69;
-      violationMsg='the beatmap is overplayed. Please pick another map.';
+      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml overplayed maps list]. Please pick another map.';
     }
 
     else if(map.beatmapset?.language?.name === 'Unspecified'){
-      if(!containsJapanese(map.beatmapset?.title_unicode) && !checkTags(map.beatmapset?.tags)){
+      if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
         rate=69;
         violationMsg='only Japanese and Instrumental maps are allowed in the lobby! Please note that detection is not perfect, especially for graveyard maps';
       }
     }
-      else if((map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental')){
+    else if((map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental')){
         rate=69;
         violationMsg='only Japanese and Instrumental maps are allowed in the lobby! Please note that detection is not perfect, especially for graveyard maps';
-      }
+    }
     if (rate > 0) {
       let message;
       const mapDesc = `[${map.url} ${map.beatmapset?.title}] (Star rating: ${map.difficulty_rating}, Length: ${secToTimeNotation(map.total_length)})`;
@@ -386,9 +386,9 @@ export class MapValidator {
   }
 }
 
-function containsJapanese(text: string): boolean {
+function containsJapanese(title: string, artist: string): boolean {
   const regex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/u;
-  return regex.test(text);
+  return regex.test(title) || regex.test(artist);
 }
 
 function checkTags(text: string): boolean {
@@ -396,11 +396,10 @@ function checkTags(text: string): boolean {
   return allowedTags.some(tag => text.includes(tag));
 }
 
-function isOverplayed(text: string): boolean {
-  if (text==='')
-    return false;
-  const overplayed = ["RAISE MY SWORD", "Galaxy Collapse", "Sound Chimera", "Cycle Hit", "Grievous Lady", "Putin's Boner", "Flamewall", "FireLight (Neokontrol remix)", "true DJ MAG top ranker's song Zenpen", "Dance Number o Tomo ni", "Kokou no Sousei", "Everything will freeze", "Snow Drive", "Highscore", "Teo", "Shukusei!! Loli-Kami Requiem*"];
-  return overplayed.some(name=> text.includes(name));
+function isOverplayed(name: string, id: number): boolean {
+  const overplayedIDs=[731899, 653534, 1268344];
+  const overplayedNames = ["AMAZING BREAK", "Battle Sirens (RIOT Remix)", "Ange du Blanc Pur", "Yoru Naku Usagi wa Yume o Miru", "Plus Danshi ver Reol", "Illegal Paradise (Grimoire rmx)", "FLYING OUT TO THE SKY", "LVL DEATH", "Rockefeller Street (Nightcore Mix)", "Shinbatsu o Tadori Kyoukotsu ni Itaru", "Alien Alien (Nhato Remix)", "RAISE MY SWORD", "Galaxy Collapse", "Sound Chimera", "Cycle Hit", "Grievous Lady", "Putin's Boner", "Flamewall", "FireLight (Neokontrol remix)", "true DJ MAG top ranker's song Zenpen", "Dance Number o Tomo ni", "Everything will freeze", "Snow Drive", "Highscore", "Teo", "Shukusei!! Loli-Kami Requiem*"];
+  return overplayedIDs.includes(id) || overplayedNames.includes(name);
 }
 
 function validateMapCheckerOption(option: MapCheckerUncheckedOption): option is Partial<MapCheckerOption> {
