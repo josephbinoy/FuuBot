@@ -24,6 +24,7 @@
 |`!rank`| Show player rank.|
 |`!mirror`| Request mirror link for current map.|
 |`!version`| Show bot version.||
+|`!info`| Show information about the bot.||
 
 ## Host Commands
 
