@@ -2,6 +2,7 @@
   "name": "jpn-autohost",
   "description": "Japanese beatmap only autohost bot for osu. Also banned top 100 most replayed maps",
   "main": "dist/cli/index.js",
+  "version": "1.0.0",
   "scripts": {
     "dist": "rimraf dist && tsc",
     "clean": "rimraf dist",

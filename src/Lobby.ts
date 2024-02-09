@@ -89,6 +89,8 @@ export class Lobby {
       throw new Error('Client is not connected');
     }
     this.option = getConfig('Lobby', option) as LobbyOption;
+    this.option.info_message = `Autohost bot created by me based on Meowhal's [https://github.com/Meowhal/osu-ahr osu-ahr bot]. For entire code just DM me ^^.`;
+    this.option.info_message_cooltime_ms = 30000;
     this.status = LobbyStatus.Standby;
     this.settingParser = new MpSettingsParser();
     this.statParser = new StatParser();
