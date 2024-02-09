@@ -1,8 +1,5 @@
 
-# jpn-autohost (minor tweaks to Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
-
-An Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer.  
-The host rotation is managed with a queue. Players are added to the queue when joining a multiplayer lobby and are sent to the back of the queue once their beatmap has been played.
+# jpn-autohost: An Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
 
 ## Features I added:
 - Only Japanese maps and Instrumental maps allowed. 
