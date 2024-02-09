@@ -23,6 +23,7 @@
 |`!r`| Shows any current regulations.|
 |`!rank`| Show player rank.|
 |`!mirror`| Request mirror link for current map.|
+|`!version`| Show bot version.||
 
 ## Host Commands
 
@@ -31,7 +32,7 @@
 |`!skip`| Transfers host to next player in the queue.||
 |`!start [seconds]`| Starts the match after a set time in seconds.|`!start 30`|
 |`!stop`| Stops active start timer.||
-|`!version` or `!v`| Show bot version.||
+|`!override`| Override detection and pick any map within regulation. Maximum 3 chances.||
 
 ## Administrator Commands
 
