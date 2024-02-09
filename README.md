@@ -22,6 +22,7 @@
 |`!update`| Updates current selected map to the latest version. Use when a host picks an outdated map.|
 |`!r`| Shows any current regulations.|
 |`!rank`| Show player rank.|
+|`!mirror`| Request mirror link for current map.|
 
 ## Host Commands
 
