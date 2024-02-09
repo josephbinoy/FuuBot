@@ -5,8 +5,8 @@ An Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer.
 The host rotation is managed with a queue. Players are added to the queue when joining a multiplayer lobby and are sent to the back of the queue once their beatmap has been played.
 
 ## Features I added:
-- Only Japanese maps allowed Edit: Added Instrumental maps
-- Banned overplayed maps. You can find the whole list here [here](https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/edit#gid=1130415120). Credit to this [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/). I only picked the japanese and instrumental ones because other languages will be filtered out anyways.
+- Only Japanese maps and Instrumental maps allowed. 
+- Banned overplayed maps. You can find the whole list here [here](https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/edit#gid=1130415120) (Credit to this [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)). I only picked the japanese and instrumental ones because other languages will be filtered out anyways.
 
 
 ## Features I removed:
