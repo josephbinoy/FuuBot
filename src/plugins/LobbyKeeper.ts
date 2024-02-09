@@ -455,7 +455,7 @@ export class LobbyKeeper extends LobbyPlugin {
   }
 
   getDescription(): string {
-    const keeps = [];
+    const keeps: string[] = [];
     if (this.option.mode) {
       keeps.push(`Mode: ${this.option.mode.team.name}, ${this.option.mode.score.name}`);
     }
