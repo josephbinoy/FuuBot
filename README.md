@@ -19,12 +19,12 @@ The host rotation is managed with a queue. Players are added to the queue when j
 
 |Command|Description|
 |:--|:--|
-|`!queue`| Shows host queue.|
+|`!q`| Shows host queue.|
 |`!skip`| Triggers vote to skip current host.|
 |`!start`| Triggers vote start the match.|
 |`!abort`| Triggers vote abort the match. Use when the match is stuck.|
 |`!update`| Updates current selected map to the latest version. Use when a host picks an outdated map.|
-|`!regulations`| Shows any current regulations.|
+|`!r`| Shows any current regulations.|
 |`!rank`| Show player rank.|
 
 ## Host Commands
