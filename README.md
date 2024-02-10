@@ -9,6 +9,8 @@
 ## Features I removed:
 - Completely Removed Discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7
 - Removed unnecessary directories and kept only the core files.
+- Removed unnecessay commands
+  
 # Command List
 
 ## Player Commands
