@@ -8,6 +8,7 @@ import { BeatmapRepository, FetchBeatmapError, FetchBeatmapErrorReason, BeatmapC
 import { Beatmap, Beatmapset } from '../webapi/Beatmapsets';
 import { getConfig } from '../TypedConfig';
 import { Logger } from '../Loggers';
+import fs from 'fs';
 
 export type MapCheckerOption = {
   enabled: boolean;
@@ -88,7 +89,7 @@ export class MapChecker extends LobbyPlugin {
   }
 
   private onReceivedChatCommand(command: string, param: string, player: Player): void {
-    if (command === '!r' || command === '!regulation') {
+    if (command === '!r') {
       this.lobby.SendMessageWithCoolTime(this.getRegulationDescription(), 'regulation', 10000);
       return;
     }
@@ -304,11 +305,27 @@ export function secToTimeNotation(sec: number): string {
 export class MapValidator {
   logger: Logger;
   option: MapCheckerOption;
+  overplayedIDs: number[]=[];
+  overplayedJP: string[]=[];
+  overplayedOverall: string[]=[];
 
   constructor(option: MapCheckerOption, logger: Logger) {
     this.option = option;
-
     this.logger = logger;
+    this.overplayedIDs = this.LoadFilters('./filters/overplayed_id.txt').map(Number);
+    this.overplayedJP = this.LoadFilters('./filters/overplayed_jp.txt');
+    this.overplayedOverall = this.LoadFilters('./filters/overplayed.txt');
+  }
+
+  LoadFilters(filePath: string): string[] {
+    try{
+      const data = fs.readFileSync(filePath, 'utf-8');
+      const filters = data.split('\n').map(line => line.trim())
+      return filters;
+    }
+    catch(error){
+      return [];
+    }
   }
 
   RateBeatmap(map: Beatmap, override: boolean): { rate: number, message: string } {
@@ -341,7 +358,12 @@ export class MapValidator {
       violationMsg='the beatmap length is longer than the allowed length.';
     }
 
-    else if(isOverplayed(map.beatmapset?.title || '', map.beatmapset_id || 0)){
+    else if(this.overplayedIDs.includes(map.beatmapset_id) || this.overplayedJP.includes(map.beatmapset?.title || '')){
+      rate=69;
+      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml overplayed maps list]. Please pick another map.';
+    }
+
+    else if(override && this.overplayedOverall.includes(map.beatmapset?.title || '')){
       rate=69;
       violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml overplayed maps list]. Please pick another map.';
     }
@@ -397,6 +419,10 @@ export class MapValidator {
 
     return [d_star, d_length, d_gamemode].filter(d => d !== '').join(', ');
   }
+
+  IsOverplayed(name: string, id: number): boolean {
+    return this.overplayedIDs.includes(id) || this.overplayedJP.includes(name);
+  }
 }
 
 function containsJapanese(title: string, artist: string): boolean {
@@ -407,12 +433,6 @@ function containsJapanese(title: string, artist: string): boolean {
 function checkTags(text: string): boolean {
   const allowedTags=['japanese', 'jpop', 'jrock', 'vn', 'j-pop', 'anime', 'j-rock', 'instrumental'];
   return allowedTags.some(tag => text.includes(tag));
-}
-
-function isOverplayed(name: string, id: number): boolean {
-  const overplayedIDs=[731899, 653534, 1268344];
-  const overplayedNames = ["AMAZING BREAK", "Battle Sirens (RIOT Remix)", "Ange du Blanc Pur", "Yoru Naku Usagi wa Yume o Miru", "Plus Danshi ver Reol", "Illegal Paradise (Grimoire rmx)", "FLYING OUT TO THE SKY", "LVL DEATH", "Rockefeller Street (Nightcore Mix)", "Shinbatsu o Tadori Kyoukotsu ni Itaru", "Alien Alien (Nhato Remix)", "RAISE MY SWORD", "Galaxy Collapse", "Sound Chimera", "Cycle Hit", "Grievous Lady", "Putin's Boner", "Flamewall", "FireLight (Neokontrol remix)", "true DJ MAG top ranker's song Zenpen", "Dance Number o Tomo ni", "Everything will freeze", "Snow Drive", "Highscore", "Teo", "Shukusei!! Loli-Kami Requiem*"];
-  return overplayedIDs.includes(id) || overplayedNames.includes(name);
 }
 
 function validateMapCheckerOption(option: MapCheckerUncheckedOption): option is Partial<MapCheckerOption> {
