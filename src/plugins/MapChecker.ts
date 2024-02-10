@@ -96,10 +96,10 @@ export class MapChecker extends LobbyPlugin {
       if(player.overrides < this.maxOverrides){
         this.override = true;
         player.overrides++;
-        this.lobby.SendMessage('Go ahead and pick the map you want to play!');
+        this.lobby.SendMessage('Override request received. Go ahead and pick your map. For more commands type !commands!');
       }
       else
-        this.lobby.SendMessage('You have used up all your override chances.');
+        this.lobby.SendMessage('You have used up all your override chances for today');
       return;
     }
 

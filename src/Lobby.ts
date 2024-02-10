@@ -29,6 +29,8 @@ export interface LobbyOption {
   stat_timeout_ms: number,
   info_message_announcement_interval_ms: number,
   transferhost_timeout_ms: number
+  command_list: string,
+  command_list_cooltime_ms: number,
 }
 
 export class Lobby {
@@ -89,8 +91,6 @@ export class Lobby {
       throw new Error('Client is not connected');
     }
     this.option = getConfig('Lobby', option) as LobbyOption;
-    this.option.info_message = `Autohost bot created by me based on Meowhal's [https://github.com/Meowhal/osu-ahr osu-ahr bot]. For entire code just DM me ^^.`;
-    this.option.info_message_cooltime_ms = 30000;
     this.status = LobbyStatus.Standby;
     this.settingParser = new MpSettingsParser();
     this.statParser = new StatParser();
@@ -465,7 +465,7 @@ export class Lobby {
     } else {
       const user = this.GetPlayer(from);
       if (!user) return;
-      if ((message === '!info' || message === '!help') && this.players.has(user)) {
+      if ((message === '!info') && this.players.has(user)) {
         this.sendInfoMessagePM(user);
       }
     }
@@ -580,11 +580,14 @@ export class Lobby {
     this.logger.trace(`Executing a command by ${player.name}: ${message}`);
     if (player.isReferee && message.startsWith('!mp')) return;
     const { command, param } = parser.ParseChatCommand(message);
-    if (command === '!info' || command === '!help') {
+    if (command === '!info') {
       this.showInfoMessage();
     }
-    if (command === '!version' || command === '!v') {
+    if (command === '!version') {
       this.showVersionMessage();
+    }
+    if (command === '!commands'){
+      this.sendCommandListPM(player);
     }
     this.ReceivedChatCommand.emit({ player, command, param });
   }
@@ -996,7 +999,7 @@ export class Lobby {
   }
 
   private showInfoMessage(): void {
-    this.SendMessageWithCoolTime(this.getInfoMessage(), 'infomessage', this.option.info_message_cooltime_ms);
+    this.SendMessageWithCoolTime(this.option.info_message, 'infomessage', this.option.info_message_cooltime_ms);
   }
 
   private showVersionMessage(): void {
@@ -1005,12 +1008,11 @@ export class Lobby {
   }
 
   private sendInfoMessagePM(player: Player): void {
-    this.SendPrivateMessageWithCoolTime(this.getInfoMessage(), player.escaped_name, 'infomessage', this.option.info_message_cooltime_ms);
+    this.SendPrivateMessageWithCoolTime(this.option.info_message, player.escaped_name, 'infomessage', this.option.info_message_cooltime_ms);
   }
 
-  private getInfoMessage(): string {
-    const version = this.tryGetVersion();
-    return this.option.info_message.replace('${version}', version);
+  private sendCommandListPM(player: Player): void {
+    this.SendPrivateMessageWithCoolTime(this.option.command_list, player.escaped_name, 'commandlist', this.option.command_list_cooltime_ms);
   }
 
   private tryGetVersion(): string {

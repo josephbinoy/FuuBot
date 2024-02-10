@@ -3,7 +3,6 @@ import { Player } from '../Player';
 import { LobbyPlugin } from './LobbyPlugin';
 import { BanchoResponseType } from '../parsers/CommandParser';
 import { BeatmapRepository, FetchBeatmapError, FetchBeatmapErrorReason } from '../webapi/BeatmapRepository';
-import { FetchProfileError, FetchProfileErrorReason } from '../webapi/ProfileRepository';
 import { WebApiClient } from '../webapi/WebApiClient';
 
 /**
@@ -37,57 +36,6 @@ export class MiscLoader extends LobbyPlugin {
     if (command === '!mirror') {
       if (this.canResend) {
         this.checkMirror(this.lobby.mapId);
-      }
-    }
-    if (command === '!rank') {
-      this.getProfile(player);
-    }
-  }
-
-  async getProfile(player: Player) {
-    try {
-      if (!this.canSeeRank) {
-        return;
-      }
-      const currentPlayer = this.lobby.GetPlayer(player.name);
-      if (!currentPlayer)
-        return;
-      if (currentPlayer.id === 0 || this.lobby.gameMode === undefined) {
-        this.lobby.SendMessageWithCoolTime(`!stats ${currentPlayer.name}`, '!rank', 10000);
-        return;
-      }
-      let selectedMode = '';
-      switch (this.lobby.gameMode.value) {
-        case '0':
-          selectedMode = 'osu';
-          break;
-        case '1':
-          selectedMode = 'taiko';
-          break;
-        case '2':
-          selectedMode = 'fruits';
-          break;
-        case '3':
-          selectedMode = 'mania';
-          break;
-      }
-      const profile = await WebApiClient.getPlayer(currentPlayer.id, selectedMode);
-
-      const msg = `${profile.username} your rank is #${profile.statistics.global_rank}`;
-      this.lobby.SendMessageWithCoolTime(msg, '!rank', 5000);
-
-    } catch (e: any) {
-      if (e instanceof FetchProfileError) {
-        switch (e.reason) {
-          case FetchProfileErrorReason.FormatError:
-            this.logger.error(`Failed to parse the webpage. Checked player:${player.id}`);
-            break;
-          case FetchProfileErrorReason.NotFound:
-            this.logger.info(`Profile cannot be found. Checked player:${player.id}`);
-            break;
-        }
-      } else {
-        this.logger.error(`@MiscLoader#getProfile: There was an error while checking player ${player.id}\n${e.message}\n${e.stack}`);
       }
     }
   }
