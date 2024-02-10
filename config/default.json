@@ -10,11 +10,13 @@
   "Lobby": {
     "authorized_users": [],
     "listref_duration_ms": 1000,
-    "info_message": "- Osu Auto Host Rotation Bot ver ${version} -\n-  The host rotation is managed with a queue. Players are added to the queue when joining a multiplayer lobby and are sent to the back of the queue once their beatmap has been played.\n-  Check the links > [https://github.com/Meowhal/osu-ahr/blob/master/CMDLIST.md Command List] | [https://github.com/Meowhal/osu-ahr Source Code]",
+    "info_message": "Custom autohost bot created by me based on the [https://github.com/Meowhal/osu-ahr osu-ahr] bot.\nFor command list type !commands",
     "info_message_cooltime_ms": 60000,
     "stat_timeout_ms": 5000,
     "info_message_announcement_interval_ms": 0,
-    "transferhost_timeout_ms": 5000
+    "transferhost_timeout_ms": 5000,
+    "command_list": "Player Commands\n!q                              Shows host queue.\n!skip                         Triggers vote to skip current host.\n!start                        Triggers vote start the match.\n!abort                       Triggers vote abort the match. Use when the match is stuck.\n!update                    Updates current selected map to the latest version. Use when a host picks an outdated map.\n!r                                Shows any current regulations.\n!mirror                      Request mirror link for current map.\n!version                    Show bot version.\n!info                          Show information about the bot.\n!commands             Lists all available commands.\n‎\nHost Commands\n!skip                          Transfers host to next player in the queue.\n!start [seconds]      Starts the match after a set time in seconds.\n!stop                          Stops active start timer.\n!override                  Override detection and pick any map within regulation. Maximum 3 chances.",
+    "command_list_cooltime_ms": 60000
   },
   "AfkKicker": {
     "enabled": true,
