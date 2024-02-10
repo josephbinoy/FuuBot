@@ -2,7 +2,7 @@
 # jpn-autohost: An Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
 
 ## Features I added:
-- Only Japanese maps and Instrumental maps allowed. 
+- Only Japanese maps and Instrumental maps allowed. Can be overridden with !override.
 - Banned overplayed maps. I referred this [list](https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml) (Credit to this [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)).
 
 
