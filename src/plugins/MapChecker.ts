@@ -371,12 +371,12 @@ export class MapValidator {
     else if(!override && map.beatmapset?.language?.name === 'Unspecified'){
       if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
         rate=69;
-        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing metadata may be accidentally rejected. In such a case, type !override to pick the map anyway. Maximum 3 chances';
+        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing metadata may be accidentally rejected. Type !override to pick the map anyway. Maximum 3 chances';
       }
     }
     else if(!override && map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental'){
         rate=69;
-        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing metadata may be accidentally rejected. In such a case, type !override to pick the map anyway. Maximum 3 chances';
+        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing metadata may be accidentally rejected. Type !override to pick the map anyway. Maximum 3 chances';
     }
     if (rate > 0) {
       let message;
