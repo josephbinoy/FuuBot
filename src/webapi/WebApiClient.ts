@@ -6,8 +6,9 @@ import path from 'path';
 import { URL } from 'url';
 import { promises as fs } from 'fs';
 import { UserProfile, trimProfile } from './UserProfile';
+import { History } from './HistoryTypes';
 import { Beatmap, Beatmapset } from './Beatmapsets';
-import { FetchBeatmapError, FetchBeatmapErrorReason, IBeatmapFetcher } from './BeatmapRepository';
+import { FetchBeatmapError, FetchBeatmapErrorReason} from './BeatmapRepository';
 import { FetchProfileError, FetchProfileErrorReason } from './ProfileRepository';
 import { getLogger, Logger } from '../Loggers';
 
@@ -32,7 +33,7 @@ export interface WebApiClientOption {
   token_store_dir: string,
 }
 
-class WebApiClientClass implements IBeatmapFetcher {
+class WebApiClientClass {
   option: WebApiClientOption;
   logger: Logger;
   available: boolean;
@@ -332,6 +333,13 @@ class WebApiClientClass implements IBeatmapFetcher {
       }
       throw new FetchBeatmapError(FetchBeatmapErrorReason.Unknown, e.message);
     }
+  }
+
+  async getHistory(matchid: number | undefined): Promise<History> {
+    const data = await this.accessApi(`https://osu.ppy.sh/api/v2/matches/${matchid}`, {
+      method: 'GET'
+    });
+    return data;
   }
 }
 

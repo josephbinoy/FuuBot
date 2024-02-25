@@ -71,9 +71,6 @@ export class LobbyKeeper extends LobbyPlugin {
     this.lobby.PlayerLeft.on(a => this.onPlayerLeft(a.player, a.slot));
     this.lobby.PlayerMoved.on(a => this.onPlayerMoved(a.from, a.to));
     this.lobby.ParsedSettings.on(a => this.onParsedSettings(a.result));
-
-    this.lobby.historyRepository.kickedUser.on(a => this.onKickedPlayer(a.kickedUser));
-    this.lobby.historyRepository.finishedGame.on(a => this.onFinishedGame(a.game));
   }
 
   convertOptions() {
@@ -202,7 +199,7 @@ export class LobbyKeeper extends LobbyPlugin {
   }
 
   private checkTitle(title: string | undefined) {
-    if (!title && (this.lobby.historyRepository.hasError || this.option.title !== this.lobby.lobbyName)) {
+    if (!title && (this.option.title !== this.lobby.lobbyName)) {
       return true;
     } else if (title !== this.option.title) {
       return true;

@@ -6,7 +6,6 @@ import { TypedEvent } from './libs/TypedEvent';
 import { DeferredAction } from './libs/DeferredAction';
 import { MpSettingsParser, MpSettingsResult } from './parsers/MpSettingsParser';
 import { LobbyPlugin } from './plugins/LobbyPlugin';
-import { HistoryRepository } from './webapi/HistoryRepository';
 import { PlayMode } from './Modes';
 import { getConfig } from './TypedConfig';
 import { getLogger, Logger } from './Loggers';
@@ -58,7 +57,6 @@ export class Lobby {
   statParser: StatParser;
   logger: Logger;
   chatlogger: Logger;
-  historyRepository: HistoryRepository;
   infoMessageAnnouncementTimeId: NodeJS.Timeout | null = null;
   transferHostTimeout: DeferredAction<void>;
   gameMode: PlayMode | undefined;
@@ -98,7 +96,6 @@ export class Lobby {
     this.ircClient = ircClient;
     this.logger = getLogger('lobby');
     this.chatlogger = getLogger('chat');
-    this.historyRepository = new HistoryRepository(0);
     this.transferHostTimeout = new DeferredAction(() => this.onTimeoutedTransferHost());
     this.registerEvents();
   }
@@ -134,7 +131,6 @@ export class Lobby {
         if (channel === this.channel) {
           this.stopInfoMessageAnnouncement();
           this.CancelAllDeferredMessages();
-          this.historyRepository.lobbyClosed = true;
 
           this.logger.info('Detected a part event. Destroying the lobby...');
           this.status = LobbyStatus.Left;
@@ -676,7 +672,6 @@ export class Lobby {
     this.players.clear();
     this.channel = channel;
     this.lobbyId = channel.replace('#mp_', '');
-    this.historyRepository.setLobbyId(this.lobbyId);
     this.status = LobbyStatus.Entered;
     this.logger.addContext('channel', this.lobbyId);
     this.chatlogger.addContext('channel', this.lobbyId);

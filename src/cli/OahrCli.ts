@@ -166,12 +166,6 @@ export class OahrCli extends OahrBase {
           case '?':
             console.log(lobbyMenuCommandsMessage);
             break;
-          case 'check_order':
-            this.lobby.historyRepository.calcCurrentOrderAsName().then(r => {
-              logger.info(`History order = ${r.join(', ')}`);
-              logger.info(`Current order = ${this.selector.hostQueue.map(p => p.name).join(', ')}`);
-            });
-            break;
           case '':
             break;
           default:

@@ -13,6 +13,13 @@ export type Match = {
   'name': string
 }
 
+export type PromptScore = {
+  'name': string,
+  'score': number,
+  'combo': number,
+  'accuracy': number,
+}
+
 export type Event = {
   'id': number,
   'detail': {
@@ -69,6 +76,9 @@ export type Score = {
   'accuracy': number,
   'mods': string[],
   'score': number,
+  'mode' : string,
+  'passed' : boolean,
+  'mode_int': number,
   'max_combo': number,
   'perfect': number,
   'statistics': {
@@ -79,13 +89,19 @@ export type Score = {
     'count_katu': number,
     'count_miss': number
   },
-  'rank': null,
-  'created_at': null,
+  'rank': string,
+  'replay' : boolean,
+  'created_at': string,
+  'type' : string,
   'best_id': null,
-  'pp': number | null,
+
+  'pp': null,
   'match': {
     'slot': number,
     'team': 'none' | 'red' | 'blue',
-    'pass': number
+    'pass': boolean
+  }
+  'current_user_attributes' :{
+  'pin' : null
   }
 }
