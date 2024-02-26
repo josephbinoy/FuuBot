@@ -7,13 +7,16 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { VectorStoreRetriever } from "@langchain/core/vectorstores";
-// import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-// import { PDFLoader } from "langchain/document_loaders/fs/pdf";
-import { formatDocumentsAsString } from "langchain/util/document";
+// import { formatDocumentsAsString } from "langchain/util/document";
+// import { RunnablePassthrough } from "@langchain/core/runnables";
 import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
-import { RunnableSequence, RunnablePassthrough } from "@langchain/core/runnables";
+import { RunnableSequence} from "@langchain/core/runnables";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import 'dotenv/config';
+
+
+// import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+// import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 
 // const loader = new PDFLoader("osu_ref.pdf");
 // const document = await loader.load({
@@ -30,6 +33,7 @@ import 'dotenv/config';
 export class AskBot extends LobbyPlugin {
   qnachain!: RunnableSequence;
   retriever!: VectorStoreRetriever<HNSWLib>;
+  timeInvoked: number = 0;
   constructor(lobby: Lobby) {
     super(lobby, 'AskBot', 'askbot');
     this.registerEvents();
@@ -59,14 +63,12 @@ export class AskBot extends LobbyPlugin {
     const vectorStore = await HNSWLib.load('./src/ai/vectorstore_js', new OpenAIEmbeddings());
     const retriever = vectorStore.asRetriever();
     
-    const template = `Use the following pieces of context to answer the question at the end.
+    const template = `Use the following pieces of context to answer the question asked by an osu player. 
     Use three sentences maximum and keep the answer as concise as possible. Address the player by name.
     Context: {context}
     
     Question: {question}
-    Asked by: {player}
-
-    Helpful Answer:`
+    Asked by: {player}`
     
     const customPrompt = PromptTemplate.fromTemplate(template)
     
@@ -95,6 +97,11 @@ export class AskBot extends LobbyPlugin {
   }
 
   private async onAskCommand(player: Player, question: string): Promise<string> {
+    const now = Date.now();
+    if (now - this.timeInvoked < 5000) {
+      throw new Error('Please wait 5 seconds before asking another question');
+    }
+    this.timeInvoked = now;
     if (question.length == 0) {
       throw new Error('Please ask a question! Usage: !ask <question>');
     }
