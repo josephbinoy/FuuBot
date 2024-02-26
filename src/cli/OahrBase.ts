@@ -18,6 +18,7 @@ import { AfkKicker } from '../plugins/AfkKicker';
 import { MiscLoader } from '../plugins/MiscLoader';
 import { parser } from '../parsers/CommandParser';
 import { CacheCleaner } from '../plugins/CacheCleaner';
+import { AskBot } from '../ai/AskBot';
 
 const logger = getLogger('ahr');
 
@@ -46,6 +47,7 @@ export class OahrBase {
   afkkicker: AfkKicker;
   miscLoader: MiscLoader;
   cleaner: CacheCleaner;
+  askbot!: AskBot;
   option: OahrCliOption = OahrCliDefaultOption;
 
   constructor(client: IIrcClient) {
@@ -67,6 +69,11 @@ export class OahrBase {
     this.afkkicker = new AfkKicker(this.lobby);
     this.cleaner = new CacheCleaner(this.lobby);
     this.lobby.RaisePluginsLoaded();
+    this.createAskBotInstance()
+  }
+
+  async createAskBotInstance(): Promise<void> {
+    this.askbot = await AskBot.create(this.lobby);
   }
 
   get isRegistered(): boolean {

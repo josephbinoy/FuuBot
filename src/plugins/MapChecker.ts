@@ -202,7 +202,7 @@ export class MapChecker extends LobbyPlugin {
     if (mapId === this.lastMapId) return;
     try {
       const map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
-
+      this.lobby.maxCombo = map.max_combo;
       if (mapId !== this.checkingMapId) {
         this.logger.info(`The target beatmap has already been changed. Checked beatmap: ${mapId}, Current: ${this.checkingMapId}`);
         return;

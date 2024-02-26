@@ -42,6 +42,7 @@ export class Lobby {
   status: LobbyStatus;
   mapTitle: string = '';
   mapId: number = 0;
+  maxCombo : number = 3000;
   host: Player | null = null;
   hostPending: Player | null = null;
   players: Set<Player> = new Set<Player>();

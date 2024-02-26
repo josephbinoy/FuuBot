@@ -2,7 +2,7 @@ import { Lobby } from '../Lobby';
 import { LobbyPlugin } from './LobbyPlugin';
 import { WebApiClient } from '../webapi/WebApiClient';
 import { Event, History, Game, PromptScore } from '../webapi/HistoryTypes';
-
+import { getSummary } from '../ai/ScoreSummariser';
 
 export class HistoryLoader extends LobbyPlugin {
   // task: Promise<void>;
@@ -34,6 +34,12 @@ export class HistoryLoader extends LobbyPlugin {
       this.checkLobbyName(latest_event);
       const latest_game = latest_event?.game;
       this.createLeaderboard(latest_game);
+      if (this.leaderboard.length > 1) {
+        const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
+        const summary = await getSummary(this.lobby.maxCombo, JSON.stringify(sortedLeaderboard));
+        this.lobby.SendMessage(summary);
+        this.leaderboard = [];
+      }
     }
 
   }
@@ -53,11 +59,6 @@ export class HistoryLoader extends LobbyPlugin {
         accuracy: score.accuracy
       }
       this.leaderboard.push(pscore);
-    }
-    if (this.leaderboard.length > 0) {
-      const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
-      this.lobby.SendMessage("Winner is "+sortedLeaderboard[0].name)
-      this.leaderboard = [];
     }
   }
 
