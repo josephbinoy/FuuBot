@@ -49,6 +49,8 @@ export class AskBot extends LobbyPlugin {
     if (command === '!ask') {
       this.onAskCommand(player, param).then(response => {
         this.lobby.SendMessage(response);
+      }).catch(err => {
+        this.lobby.SendMessage(err.message);
       });
     }
   }
@@ -93,6 +95,9 @@ export class AskBot extends LobbyPlugin {
   }
 
   private async onAskCommand(player: Player, question: string): Promise<string> {
+    if (question.length == 0) {
+      throw new Error('Please ask a question! Usage: !ask <question>');
+    }
     const context = await this.retriever.getRelevantDocuments(question);
     const response = await this.qnachain.invoke({
       question: question,
