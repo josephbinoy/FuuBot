@@ -18,13 +18,18 @@ import 'dotenv/config';
 // import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 // import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 
-// const loader = new PDFLoader("osu_ref.pdf");
-// const document = await loader.load({
-//     splitPages: false,
-// });
+//multiple reference pdfs
+// const directoryLoader = new DirectoryLoader(
+//   "./pdfs",
+//   {
+//     ".pdf": (path) => new PDFLoader(path),
+//   }
+// );
 
-// const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 500, chunkOverlap: 100 });
-// const splits = await textSplitter.splitDocuments(document);
+// const documents = await directoryLoader.load();
+
+// const textSplitter = new RecursiveCharacterTextSplitter({ chunkSize: 1000, chunkOverlap: 200 });
+// const splits = await textSplitter.splitDocuments(documents);
 
 // const vectorStore = await HNSWLib.fromDocuments(splits, new OpenAIEmbeddings());
 // vectorStore.save('./vectorstore_js');
@@ -64,7 +69,7 @@ export class AskBot extends LobbyPlugin {
     const retriever = vectorStore.asRetriever();
     
     const template = `Use the following pieces of context to answer the question asked by an osu player. 
-    Use three sentences maximum and keep the answer as concise as possible. Address the player by name.
+    Use three sentences maximum and keep the answer as concise as possible. Thank the player by for the question.
     Context: {context}
     
     Question: {question}
