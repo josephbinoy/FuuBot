@@ -99,8 +99,7 @@ Cli
 
 ```text
 > npm install
-> npm install typescript
-> tsc
+> npx tsc
 ```
 
 4. Create a file `./config/local.json`, use `./config/default.json` as template.
