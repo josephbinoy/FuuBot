@@ -462,7 +462,7 @@ export class Lobby {
     } else {
       const user = this.GetPlayer(from);
       if (!user) return;
-      if ((message === '!info') && this.players.has(user)) {
+      if ((message === '!info' || message === '!help') && this.players.has(user)) {
         this.sendInfoMessagePM(user);
       }
     }

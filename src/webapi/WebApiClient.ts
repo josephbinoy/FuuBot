@@ -205,17 +205,21 @@ class WebApiClientClass {
     }
   }
 
-  async accessApi(url: string, config: any = {}, tryCount: number = 2): Promise<any> {
+  async accessApi(url: string, config: any = {},data: any = {}, tryCount: number = 2): Promise<any> {
     while (tryCount-- > 0) {
       if (!await this.updateToken() || !this.token) {
         throw new Error('@WebApiClient#accessApi: Failed getting valid token');
       }
 
       config.headers = {
-        'Authorization': `Bearer ${this.token.access_token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      };
+          'Authorization': `Bearer ${this.token.access_token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+      }
+        
+      if (data) {
+        config.data = data;
+      }
 
       try {
         const response = await axios(url, config);
@@ -340,6 +344,20 @@ class WebApiClientClass {
       method: 'GET'
     });
     return data;
+  }
+
+  async getDifficultyRating(mapId: number, mods: string[]): Promise<number> {
+    try {
+      const response = await this.accessApi(
+        `https://osu.ppy.sh/api/v2/beatmaps/${mapId}/attributes`, 
+        { method: 'POST'}, 
+        { mods: mods}
+        );
+      return parseFloat(parseFloat(response.attributes.star_rating).toFixed(2));
+    } catch (e: any) {
+      this.logger.error(`@WebApiClient#getDifficultyRating\n${e.message}\n${e.stack}`);
+      return 0;
+    }
   }
 }
 
