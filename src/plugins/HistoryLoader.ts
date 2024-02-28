@@ -1,92 +1,94 @@
 import { Lobby } from '../Lobby';
-import { Player } from '../Player';
 import { LobbyPlugin } from './LobbyPlugin';
-import { MpSettingsResult } from '../parsers/MpSettingsParser';
-import { HistoryRepository } from '../webapi/HistoryRepository';
-import { User } from '../webapi/HistoryTypes';
-import { getConfig } from '../TypedConfig';
+import { WebApiClient } from '../webapi/WebApiClient';
+import { Event, History, Game, PromptScore } from '../webapi/HistoryTypes';
+import { getSummary } from '../ai/ScoreSummariser';
 
-export interface HistoryLoaderOption {
-  fetch_interval_ms: number; // ヒストリー取得間隔
-}
-
-/**
- * 定期的にhistoryを取得し、lobbyのhistoryrepositoryに保存する
- */
 export class HistoryLoader extends LobbyPlugin {
-  option: HistoryLoaderOption;
-  repository: HistoryRepository;
-  fetchInvervalId: NodeJS.Timeout | null = null;
+  // task: Promise<void>;
+  history: History | null = null;
+  latest_event: Event | null = null;
+  leaderboard: PromptScore[] = [];
 
-  constructor(lobby: Lobby, option: Partial<HistoryLoaderOption> = {}) {
+  constructor(lobby: Lobby) {
     super(lobby, 'HistoryLoader', 'history');
-    this.option = getConfig(this.pluginName, option) as HistoryLoaderOption;
-    this.repository = lobby.historyRepository;
+    // this.task = this.initializeAsync();
     this.registerEvents();
   }
 
+  // // private async initializeAsync(): Promise<void> {
+  // //   await WebApiClient.updateToken();
+  // // }
+
   private registerEvents(): void {
-    this.lobby.FixedSettings.on(a => this.onFixedSettings(a.result, a.playersIn, a.playersOut, a.hostChanged));
-    this.lobby.JoinedLobby.on(a => this.onJoinedLobby(a.channel));
-    this.lobby.MatchStarted.on(a => this.onMatchStarted());
-    this.lobby.LeftChannel.on(a => this.stopFetch());
+    this.lobby.MatchFinished.on(() => this.onMatchFinished());
   }
 
-  async onFixedSettings(result: MpSettingsResult, playersIn: Player[], playersOut: Player[], hostChanged: boolean): Promise<void> {
-    if (!this.repository) return;
-    const order = (await this.repository.calcCurrentOrderAsName()).join(',');
-    this.SendPluginMessage('reorder', [order]);
+  async onMatchFinished() {
+    const lobbyId = this.lobby.lobbyId ?? '0';
+    this.history = await WebApiClient.getHistory(parseInt(lobbyId));
+    const latest_event= this.getLatestGameEvent(this.history);
+
+    if(latest_event != null && latest_event != this.latest_event){
+      this.latest_event = latest_event;
+      this.checkLobbyName(latest_event);
+      const latest_game = latest_event?.game;
+      this.createLeaderboard(latest_game);
+      if (this.leaderboard.length > 1) {
+        const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
+        const summary = await getSummary(this.lobby.maxCombo, JSON.stringify(sortedLeaderboard));
+        this.lobby.SendMessage(summary);
+        this.leaderboard = [];
+      }
+    }
+
   }
 
-  onJoinedLobby(channel: string): any {
-    if (this.lobby.lobbyId) {
-      this.repository.lobbyId = parseInt(this.lobby.lobbyId);
-      this.repository.gotUserProfile.on(a => this.onGotUserProfile(a.user));
-      this.repository.changedLobbyName.on(a => this.onChangedLobbyName(a.newName, a.oldName));
-      this.startFetch();
+  createLeaderboard(game: Game | undefined) {
+    if (game == undefined) return;
+    for (const score of game.scores) {
+      if (score.passed == false) continue;
+      let name = [...this.lobby.players].find(p => p.id == score.user_id)?.name;
+      if (name == undefined) {
+        name = this.searchUsers(score.user_id);
+      }
+      const pscore: PromptScore = {
+        name: name? name : 'unknown',
+        score: score.score,
+        combo: score.max_combo,
+        accuracy: score.accuracy
+      }
+      this.leaderboard.push(pscore);
     }
   }
 
-  onMatchStarted() {
-    if (this.fetchInvervalId === null) {
-      this.repository.updateToLatest();
+  searchUsers(id: Number): string | undefined{
+    const user = this.history?.users.find(u => u.id == id);
+    if (user != undefined) {
+      return user.username;
     }
+    return undefined;
   }
 
-  onGotUserProfile(user: User): any {
-    const p = this.lobby.GetOrMakePlayer(user.username);
-    p.id = user.id;
-  }
-
-  onChangedLobbyName(newName: string, oldName: string): any {
-    this.lobby.lobbyName = newName;
-    this.logger.info(`Lobby name has been changed: ${oldName} -> ${newName}, Host: ${this.lobby.host?.name}`);
-  }
-
-  startFetch(): void {
-    this.stopFetch();
-    if (this.option.fetch_interval_ms >= 5000) {
-      this.logger.trace('Started fetching.');
-      this.fetchInvervalId = setInterval(() => {
-        if (!this.lobby.isMatching) {
-          this.repository.updateToLatest();
-        }
-      }, this.option.fetch_interval_ms);
+  getLatestGameEvent(history: History): Event | null {
+    let i = history.events.length-1;
+    if (history.current_game_id==null){
+      while(i>=0){
+        if (history.events[i].game != undefined && history.events[i].game?.end_time != null)
+          return history.events[i];
+          i--;
+      }
     }
+    return null;
   }
 
-  stopFetch(): void {
-    if (this.fetchInvervalId) {
-      this.logger.trace('Stopped fetching.');
-      clearInterval(this.fetchInvervalId);
-      this.fetchInvervalId = null;
+  checkLobbyName(ev: Event) {
+    if (ev.detail.text && ev.detail.text !== this.lobby.lobbyName) {
+      const newName = ev.detail.text;
+      const oldName = this.lobby.lobbyName;
+      this.logger.info(`Lobby name has been changed: ${oldName} -> ${newName}, Host: ${this.lobby.host?.name}. Resetting...`);
+      this.lobby.SendMessage(`!mp name ${oldName}`);
+      this.lobby.lobbyName = newName;
     }
-  }
-
-  GetPluginStatus(): string {
-    return `-- History Loader --
-  hasError: ${this.repository?.hasError}
-  Latest: ${this.repository?.latestEventId}
-  Loaded events: ${this.repository?.events.length}`;
   }
 }

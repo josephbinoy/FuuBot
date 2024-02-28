@@ -8,6 +8,7 @@ import { BeatmapRepository, FetchBeatmapError, FetchBeatmapErrorReason, BeatmapC
 import { Beatmap, Beatmapset } from '../webapi/Beatmapsets';
 import { getConfig } from '../TypedConfig';
 import { Logger } from '../Loggers';
+import { WebApiClient } from '../webapi/WebApiClient';
 import fs from 'fs';
 
 export type MapCheckerOption = {
@@ -33,6 +34,25 @@ export class MapChecker extends LobbyPlugin {
   validator: MapValidator;
   override: boolean = false;
   maxOverrides: number = 3;
+  activeMods: string=''
+  modAcronym: Record<string, string>= {
+    'Easy': 'EZ',
+    'NoFail': 'NF',
+    'HalfTime': 'HT',
+    'HardRock': 'HR',
+    'SuddenDeath': 'SD',
+    'Perfect': 'PF',
+    'DoubleTime': 'DT',
+    'Nightcore': 'NC',
+    'Hidden': 'HD',
+    'Flashlight': 'FL',
+    'Relax': 'RL',
+    'Autopilot': 'AP',
+    'Spun Out': 'SO',
+  };
+
+  diffAffectingMods = ['Easy', 'HalfTime', 'HardRock', 'DoubleTime', 'Nightcore', 'FlashLight'];
+
 
   constructor(lobby: Lobby, option: Partial<MapCheckerUncheckedOption> = {}) {
     super(lobby, 'MapChecker', 'mapChecker');
@@ -43,7 +63,7 @@ export class MapChecker extends LobbyPlugin {
     if (this.option.gamemode instanceof PlayMode) {
       this.lobby.gameMode = this.option.gamemode;
     }
-    this.validator = new MapValidator(this.option, this.logger);
+    this.validator = new MapValidator(this.option, this.logger, this.lobby);
     this.registerEvents();
   }
 
@@ -81,10 +101,28 @@ export class MapChecker extends LobbyPlugin {
     this.cancelCheck();
   }
 
-  private onBeatmapChanged(mapId: number, mapTitle: string) {
+  private async onBeatmapChanged(mapId: number, mapTitle: string) {
     if (this.option.enabled) {
       this.checkingMapId = mapId;
-      this.check(mapId, mapTitle);
+      if (this.lobby.SendMessageWithCoolTime('!mp settings', 'modcheck', 5000)) {
+        try {
+          await new Promise<void>((resolve,reject) => {
+            //get mods
+            this.lobby.ParsedSettings.once(a => {
+              this.activeMods = a.result.activeMods.replace(/, Freemod|Freemod, |^Freemod$/, '');
+              resolve();
+            });
+
+            setTimeout(() => {
+              reject();
+            }, 5000);
+          });
+        } finally {
+          this.check(mapId, mapTitle);
+        }
+      } else {
+        this.check(mapId, mapTitle);
+      }
     }
   }
 
@@ -93,14 +131,14 @@ export class MapChecker extends LobbyPlugin {
       this.lobby.SendMessageWithCoolTime(this.getRegulationDescription(), 'regulation', 10000);
       return;
     }
-    if(command === '!override' && player.isHost) {
+    if(command === '!force' && player.isHost) {
       if(player.overrides < this.maxOverrides){
         this.override = true;
         player.overrides++;
-        this.lobby.SendMessage('Override request received. Go ahead and pick your map. For more commands type !commands!');
+        this.lobby.SendMessage('Go ahead and pick your map. Type !ask to ask the bot for help.');
       }
       else
-        this.lobby.SendMessage('You have used up all your override chances for today');
+        this.lobby.SendMessage('Sorry! You have forced too many maps today. (Maximum 3)');
       return;
     }
 
@@ -199,15 +237,21 @@ export class MapChecker extends LobbyPlugin {
   }
 
   private async check(mapId: number, mapTitle: string): Promise<void> {
-    if (mapId === this.lastMapId) return;
+    if (mapId === this.lastMapId && this.activeMods == '') return;
     try {
       const map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
-
+      this.lobby.maxCombo = map.max_combo;
       if (mapId !== this.checkingMapId) {
         this.logger.info(`The target beatmap has already been changed. Checked beatmap: ${mapId}, Current: ${this.checkingMapId}`);
         return;
       }
-      const r = this.validator.RateBeatmap(map, this.override);
+      let newStarRating = 0;
+      if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
+        const modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
+        newStarRating = await WebApiClient.getDifficultyRating(mapId, modList);
+        this.activeMods = '';
+      }
+      const r = this.validator.RateBeatmap(map, this.override, newStarRating);
       if (r.rate > 0) {
         if(r.rate === 69)
           this.rejectMap(r.message, false);
@@ -308,13 +352,15 @@ export class MapValidator {
   overplayedIDs: number[]=[];
   overplayedJP: string[]=[];
   overplayedOverall: string[]=[];
+  lobbyInstance: Lobby;
 
-  constructor(option: MapCheckerOption, logger: Logger) {
+  constructor(option: MapCheckerOption, logger: Logger, lobbyInstance: Lobby) {
     this.option = option;
     this.logger = logger;
     this.overplayedIDs = this.LoadFilters('./filters/overplayed_id.txt').map(Number);
     this.overplayedJP = this.LoadFilters('./filters/overplayed_jp.txt');
     this.overplayedOverall = this.LoadFilters('./filters/overplayed.txt');
+    this.lobbyInstance = lobbyInstance;
   }
 
   LoadFilters(filePath: string): string[] {
@@ -328,9 +374,16 @@ export class MapValidator {
     }
   }
 
-  RateBeatmap(map: Beatmap, override: boolean): { rate: number, message: string } {
+  RateBeatmap(map: Beatmap, override: boolean, newStarRating: number): { rate: number, message: string }{
     let rate = 0;
     let violationMsg = "";
+    let starRating = map.difficulty_rating;
+    let modsOn = false;
+
+    if(newStarRating > 0){
+      starRating = newStarRating;
+      modsOn = true;
+    }
 
     const mapmode = PlayMode.from(map.mode);
     if (mapmode !== this.option.gamemode && this.option.gamemode !== null) {
@@ -338,14 +391,22 @@ export class MapValidator {
       rate += 1;
     }
 
-    else if (this.option.star_min > 0 && map.difficulty_rating < this.option.star_min) {
-      rate += parseFloat((this.option.star_min - map.difficulty_rating).toFixed(2));
+    else if (this.option.star_min > 0 && starRating < this.option.star_min) {
+      rate += parseFloat((this.option.star_min - starRating).toFixed(2));
       violationMsg='the beatmap star rating is lower than the allowed star rating.';
+      if (modsOn) {
+        this.lobbyInstance.SendMessage('!mp mods');
+        modsOn = false;
+      }
     }
 
-    else if (this.option.star_max > 0 && this.option.star_max < map.difficulty_rating) {
-      rate += parseFloat((map.difficulty_rating - this.option.star_max).toFixed(2));
+    else if (this.option.star_max > 0 && this.option.star_max < starRating) {
+      rate += parseFloat((starRating - this.option.star_max).toFixed(2));
       violationMsg='the beatmap star rating is higher than the allowed star rating.';
+      if (modsOn) {
+        this.lobbyInstance.SendMessage('!mp mods');
+        modsOn = false;
+      }
     }
 
     else if (this.option.length_min > 0 && map.total_length < this.option.length_min) {
@@ -371,16 +432,16 @@ export class MapValidator {
     else if(!override && map.beatmapset?.language?.name === 'Unspecified'){
       if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
         rate=69;
-        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing metadata may be accidentally rejected. Type !override to pick the map anyway. Maximum 3 chances';
+        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing metadata may be accidentally rejected. Type !force to pick the map anyway.';
       }
     }
     else if(!override && map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental'){
         rate=69;
-        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing metadata may be accidentally rejected. Type !override to pick the map anyway. Maximum 3 chances';
+        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\nMaps with missing metadata may be accidentally rejected. Type !force to pick the map anyway.';
     }
     if (rate > 0) {
       let message;
-      const mapDesc = `[${map.url} ${map.beatmapset?.title}] (Star rating: ${map.difficulty_rating}, Length: ${secToTimeNotation(map.total_length)})`;
+      const mapDesc = `[${map.url} ${map.beatmapset?.title}] (Star rating: ${starRating}, Length: ${secToTimeNotation(map.total_length)})`;
       message = `${mapDesc} was rejected because ${violationMsg}`;
       return { rate, message };
     } 

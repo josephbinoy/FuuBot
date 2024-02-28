@@ -63,7 +63,6 @@ export class CacheCleaner extends LobbyPlugin {
 
   private async clearCache() {
     try {
-      await this.lobby.historyRepository.clearCache();
       BeatmapRepository.discardExpiredCache(this.option.intervalMs);
       ProfileRepository.discardExpiredCache(this.option.intervalMs);
       if (global.gc) {
