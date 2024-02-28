@@ -395,7 +395,7 @@ export class MapValidator {
       rate += parseFloat((this.option.star_min - starRating).toFixed(2));
       violationMsg='the beatmap star rating is lower than the allowed star rating.';
       if (modsOn) {
-        this.lobbyInstance.SendMessage('!mp mods');
+        this.lobbyInstance.SendMessage('!mp mods Freemod');
         modsOn = false;
       }
     }
@@ -404,7 +404,7 @@ export class MapValidator {
       rate += parseFloat((starRating - this.option.star_max).toFixed(2));
       violationMsg='the beatmap star rating is higher than the allowed star rating.';
       if (modsOn) {
-        this.lobbyInstance.SendMessage('!mp mods');
+        this.lobbyInstance.SendMessage('!mp mods Freemod');
         modsOn = false;
       }
     }
