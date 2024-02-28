@@ -2,7 +2,7 @@
 # jpn-autohost: A Custom Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
 
 ## Features I added:
-- Regulation Check for Difficulty changing mods.
+- Regulation Check for Difficulty changing mods like DT, HR.
 - An LLM based Q&A Bot to answer osu related questions.
 - Match Summarisation at the end of every match.
 - Only Japanese/Instrumental maps allowed. Can be overridden with !force.
@@ -95,7 +95,7 @@ Cli
 > git clone https://github.com/josephbinoy/jpn-autohost
 > cd jpn-autohost
 ```
-3. Install npm dependencies and typescript. Then compile.
+3. Install npm dependencies. Then compile.
 
 ```text
 > npm install
