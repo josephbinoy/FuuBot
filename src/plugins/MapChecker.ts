@@ -94,13 +94,50 @@ export class MapChecker extends LobbyPlugin {
     }
   }
 
-  private onMatchStarted() {
+  private async onMatchStarted() {
     if (this.checkingMapId) {
       this.lastMapId = this.checkingMapId;
     }
-    this.cancelCheck();
-  }
+    if (this.option.enabled) {
+      if (this.lobby.SendMessageWithCoolTime('!mp settings', 'modcheck', 5000)) {
+        try {
+          await new Promise<void>((resolve,reject) => {
+            //get mods
+            this.lobby.ParsedSettings.once(a => {
+              this.activeMods = a.result.activeMods.replace(/, Freemod|Freemod, |^Freemod$/, '');
+              resolve();
+            });
 
+            setTimeout(() => {
+              reject();
+            }, 5000);
+          });
+        } finally {
+          this.checkForMods();
+        }
+      } else {
+        this.checkForMods();
+      }
+    }
+    this.cancelCheck();
+    this.lobby.mapStartTimeSeconds = Date.now()
+  }
+ 
+  private async checkForMods() {
+    let starRating = 0;
+    if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
+      const modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
+      starRating = await WebApiClient.getDifficultyRating(this.checkingMapId, modList);
+      this.activeMods = '';
+    }
+    if (starRating && this.option.star_min > 0 && starRating < this.option.star_min) {
+      this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map below regulation.');
+    }
+
+    else if (starRating && this.option.star_max > 0 && this.option.star_max < starRating) {
+      this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation.');
+    }
+  }
   private async onBeatmapChanged(mapId: number, mapTitle: string) {
     if (this.option.enabled) {
       this.checkingMapId = mapId;
@@ -140,6 +177,10 @@ export class MapChecker extends LobbyPlugin {
       else
         this.lobby.SendMessage('Sorry! You have forced too many maps today. (Maximum 3)');
       return;
+    }
+    if(command === '!timeleft' && this.lobby.isMatching){
+      const timeLeft = (this.lobby.mapStartTimeSeconds - Date.now())/1000;
+      this.lobby.SendMessage(`Approx. time left to finish current match: ${timeLeft}s`);
     }
 
     if (player.isAuthorized) {

@@ -43,6 +43,7 @@ export class Lobby {
   mapTitle: string = '';
   mapId: number = 0;
   maxCombo : number = 3000;
+  mapStartTimeSeconds = 0;
   host: Player | null = null;
   hostPending: Player | null = null;
   players: Set<Player> = new Set<Player>();
