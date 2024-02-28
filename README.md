@@ -1,8 +1,11 @@
 
-# jpn-autohost: An Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
+# jpn-autohost: A Custom Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
 
 ## Features I added:
-- Only Japanese maps and Instrumental maps allowed. Can be overridden with !override.
+- Regulation Check for Difficulty changing mods like DT, HR.
+- An LLM based Q&A Bot to answer osu related questions.
+- Match Summarisation at the end of every match.
+- Only Japanese/Instrumental maps allowed. Can be overridden with !force.
 - Banned overplayed maps. I referred this [list](https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml) (Credit to this [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)).
 
 
@@ -10,6 +13,8 @@
 - Completely Removed Discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7
 - Removed unnecessary directories and kept only the core files.
 - Removed unnecessary commands
+- Removed Periodic fetch/cache of match history and player profiles
+- Removed outdated api calls and website based fetching. The bot strictly uses [osu! api v2](https://osu.ppy.sh/docs/index.html)
   
 # Command List
 
@@ -17,6 +22,7 @@
 
 |Command|Description|
 |:--|:--|
+|`!ask <question>`| Ask the bot any question. It can be about the lobby or osu in general.|
 |`!q`| Shows host queue.|
 |`!skip`| Triggers vote to skip current host.|
 |`!start`| Triggers vote start the match.|
@@ -25,7 +31,7 @@
 |`!r`| Shows any current regulations.|
 |`!mirror`| Request mirror link for current map.|
 |`!version`| Show bot version.||
-|`!info`| Show information about the bot.||
+|`!info \| !help`| Show information about the bot.||
 |`!commands`| Lists all available commands.||
 
 ## Host Commands
@@ -35,7 +41,7 @@
 |`!skip`| Transfers host to next player in the queue.||
 |`!start [seconds]`| Starts the match after a set time in seconds.|`!start 30`|
 |`!stop`| Stops active start timer.||
-|`!override`| Override detection and pick any map within regulation. Maximum 3 chances.||
+|`!force`| Override detection and force pick any map within regulation. Maximum 3 chances.||
 
 ## Administrator Commands
 
@@ -89,12 +95,11 @@ Cli
 > git clone https://github.com/josephbinoy/jpn-autohost
 > cd jpn-autohost
 ```
-3. Install npm dependencies and typescript. Then compile.
+3. Install npm dependencies. Then compile.
 
 ```text
 > npm install
-> npm install typescript
-> tsc
+> npx tsc
 ```
 
 4. Create a file `./config/local.json`, use `./config/default.json` as template.
