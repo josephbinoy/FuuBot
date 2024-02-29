@@ -4,6 +4,5 @@
 
 ## Tasks
 
-- add isValid boolean to prevent small window cheats
 - remove profile repo
 
