@@ -49,8 +49,8 @@
 
 |Command|Description|Example|
 |:--|:--|:--|
-|`*start`|Forces the match to start.||
-|`*skip`|Forces current host to skip.||
+|`*start`|Forces the match to start.|
+|`*skip`|Forces current host to skip.|
 |`*order [players list]`| Reorders the queue in specified order. |`*order p1, p2, p3`|
 |`*keep size [1-16]` | Keeps the size of the lobby at specified number. | `*keep size 8`|
 |`*keep password [password]` | Keeps the lobby password. | `*keep password foobar`|
