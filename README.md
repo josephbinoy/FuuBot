@@ -39,18 +39,18 @@
 
 |Command|Description|Example|
 |:--|:--|:--|
-|`!skip`| Transfers host to next player in the queue.|
+|`!skip`| Transfers host to next player in the queue.||
 |`!start [seconds]`| Starts the match after a set time in seconds.|`!start 30`|
-|`!stop`| Stops active start timer.|
-|`!abort`| Aborts the currently running match.|
-|`!force`| Override detection and force pick any map within regulation. Maximum 3 chances.|
+|`!stop`| Stops active start timer.||
+|`!abort`| Aborts the currently running match.||
+|`!force`| Override detection and force pick any map within regulation. Maximum 3 chances.||
 
 ## Administrator Commands
 
 |Command|Description|Example|
 |:--|:--|:--|
-|`*start`|Forces the match to start.|
-|`*skip`|Forces current host to skip.|
+|`*start`|Forces the match to start.||
+|`*skip`|Forces current host to skip.||
 |`*order [players list]`| Reorders the queue in specified order. |`*order p1, p2, p3`|
 |`*keep size [1-16]` | Keeps the size of the lobby at specified number. | `*keep size 8`|
 |`*keep password [password]` | Keeps the lobby password. | `*keep password foobar`|
