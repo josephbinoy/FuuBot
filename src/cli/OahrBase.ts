@@ -69,7 +69,7 @@ export class OahrBase {
     this.afkkicker = new AfkKicker(this.lobby);
     this.cleaner = new CacheCleaner(this.lobby);
     this.lobby.RaisePluginsLoaded();
-    // this.createAskBotInstance()
+    this.createAskBotInstance()
   }
 
   async createAskBotInstance(): Promise<void> {

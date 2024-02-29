@@ -43,11 +43,13 @@ export class Lobby {
   mapTitle: string = '';
   mapId: number = 0;
   maxCombo : number = 3000;
-  mapStartTimeSeconds = 0;
+  mapStartTimeMs = 0;
+  mapLength = 0;
   host: Player | null = null;
   hostPending: Player | null = null;
   players: Set<Player> = new Set<Player>();
   playersMap: Map<string, Player> = new Map<string, Player>();
+  isValidMap: boolean = false;
   isMatching: boolean = false;
   isStartTimerActive: boolean = false;
   isClearedHost: boolean = false;

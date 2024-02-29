@@ -4,6 +4,6 @@
 
 ## Tasks
 
-- !timeleft
-- send match status to askbot?
-- 
+- add isValid boolean to prevent small window cheats
+- remove profile repo
+

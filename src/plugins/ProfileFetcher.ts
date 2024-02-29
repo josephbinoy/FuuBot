@@ -5,21 +5,21 @@ import { WebApiClient } from '../webapi/WebApiClient';
 import { UserProfile } from '../webapi/UserProfile';
 import { getConfig } from '../TypedConfig';
 
-export interface ProfileFecherOption {
+export interface ProfileFetcherOption {
   profile_expired_day: number
 }
 
 
-export class ProfileFecher extends LobbyPlugin {
-  option: ProfileFecherOption;
+export class ProfileFetcher extends LobbyPlugin {
+  option: ProfileFetcherOption;
   hasError: boolean = false;
   profileMap: Map<string, UserProfile>;
   pendingNames: Set<string>;
   task: Promise<void>;
 
-  constructor(lobby: Lobby, option: Partial<ProfileFecherOption> = {}) {
+  constructor(lobby: Lobby, option: Partial<ProfileFetcherOption> = {}) {
     super(lobby, 'profile', 'profile');
-    this.option = getConfig(this.pluginName, option) as ProfileFecherOption;
+    this.option = getConfig(this.pluginName, option) as ProfileFetcherOption;
     this.profileMap = new Map<string, UserProfile>();
     this.pendingNames = new Set<string>();
     this.task = this.initializeAsync();
@@ -67,7 +67,7 @@ export class ProfileFecher extends LobbyPlugin {
         }
         this.pendingNames.delete(player.name);
       } catch (e: any) {
-        this.logger.error(`@ProfileFecher#addTaskQueueIfNeeded\n${e.message}\n${e.stack}`);
+        this.logger.error(`@ProfileFetcher#addTaskQueueIfNeeded\n${e.message}\n${e.stack}`);
       }
 
     });

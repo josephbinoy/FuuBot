@@ -99,7 +99,10 @@ export class MapChecker extends LobbyPlugin {
       this.lastMapId = this.checkingMapId;
     }
     if (this.option.enabled) {
-      if (this.lobby.SendMessageWithCoolTime('!mp settings', 'modcheck', 5000)) {
+      if (!this.lobby.isValidMap){
+        this.lobby.SendMessage('!mp abort\nThe match was aborted because host started match before map was validated')
+      }
+      else if (this.lobby.SendMessageWithCoolTime('!mp settings', 'modcheck', 5000)) {
         try {
           await new Promise<void>((resolve,reject) => {
             //get mods
@@ -115,12 +118,10 @@ export class MapChecker extends LobbyPlugin {
         } finally {
           this.checkForMods();
         }
-      } else {
-        this.checkForMods();
       }
     }
     this.cancelCheck();
-    this.lobby.mapStartTimeSeconds = Date.now()
+    this.lobby.mapStartTimeMs = Date.now()
   }
  
   private async checkForMods() {
@@ -140,6 +141,7 @@ export class MapChecker extends LobbyPlugin {
   }
   private async onBeatmapChanged(mapId: number, mapTitle: string) {
     if (this.option.enabled) {
+      this.lobby.isValidMap = false;
       this.checkingMapId = mapId;
       if (this.lobby.SendMessageWithCoolTime('!mp settings', 'modcheck', 5000)) {
         try {
@@ -179,8 +181,14 @@ export class MapChecker extends LobbyPlugin {
       return;
     }
     if(command === '!timeleft' && this.lobby.isMatching){
-      const timeLeft = (this.lobby.mapStartTimeSeconds - Date.now())/1000;
-      this.lobby.SendMessage(`Approx. time left to finish current match: ${timeLeft}s`);
+      const timeLeft = Math.floor(((this.lobby.mapStartTimeMs+this.lobby.mapLength*1000)-Date.now())/1000);
+      if(timeLeft<0){
+        this.lobby.SendMessage('The match will end in a few seconds...');
+        return;
+      }
+      const min = Math.floor(timeLeft/60);
+      const sec = timeLeft%60;
+      this.lobby.SendMessage(`Approx. time left to finish current match: ${min}m ${sec}s`);
     }
 
     if (player.isAuthorized) {
@@ -282,6 +290,7 @@ export class MapChecker extends LobbyPlugin {
     try {
       const map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
       this.lobby.maxCombo = map.max_combo;
+      this.lobby.mapLength = map.total_length;
       if (mapId !== this.checkingMapId) {
         this.logger.info(`The target beatmap has already been changed. Checked beatmap: ${mapId}, Current: ${this.checkingMapId}`);
         return;
@@ -355,6 +364,7 @@ export class MapChecker extends LobbyPlugin {
 
   private acceptMap(map: BeatmapCache): void {
     this.SendPluginMessage('validatedMap');
+    this.lobby.isValidMap = true;
     this.lastMapId = this.lobby.mapId;
     this.override=false;
     if (map.beatmapset) {

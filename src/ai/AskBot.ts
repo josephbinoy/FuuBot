@@ -56,7 +56,7 @@ export class AskBot extends LobbyPlugin {
 
   private onChatCommand(player: Player, command: string, param: string): void {
     if (command === '!ask') {
-      this.onAskCommand(player, param).then(response => {
+      this.onAskCommand(param).then(response => {
         this.lobby.SendMessage(response);
       }).catch(err => {
         this.lobby.SendMessage(err.message);
@@ -66,14 +66,14 @@ export class AskBot extends LobbyPlugin {
 
   private async initializeModel(): Promise<void>{
     const vectorStore = await HNSWLib.load('./src/ai/vectorstore_js', new OpenAIEmbeddings());
-    const retriever = vectorStore.asRetriever();
+    const retriever = vectorStore.asRetriever(4);
     
-    const template = `Use the following pieces of context to answer the question asked by an osu player. 
-    Use three sentences maximum and keep the answer as concise as possible. Thank the player by for the question.
-    Context: {context}
+    const template = `Use the following pieces of context to answer the question at the end.
+    If you don't know the answer, just say that you don't know politely, don't try to make up an answer.
+    Use three sentences maximum and keep the answer as concise as possible.
+    Context:{context}
     
-    Question: {question}
-    Asked by: {player}`
+    Question:{question}`
     
     const customPrompt = PromptTemplate.fromTemplate(template)
     
@@ -91,7 +91,7 @@ export class AskBot extends LobbyPlugin {
     // ]);
 
     const ragChain = await createStuffDocumentsChain({
-      llm,
+      llm: llm,
       prompt: customPrompt,
       outputParser: new StringOutputParser(),
     })
@@ -101,7 +101,7 @@ export class AskBot extends LobbyPlugin {
     this.logger.info('Model initialized');
   }
 
-  private async onAskCommand(player: Player, question: string): Promise<string> {
+  private async onAskCommand(question: string): Promise<string> {
     const now = Date.now();
     if (now - this.timeInvoked < 5000) {
       throw new Error('Please wait 5 seconds before asking another question');
@@ -113,8 +113,7 @@ export class AskBot extends LobbyPlugin {
     const context = await this.retriever.getRelevantDocuments(question);
     const response = await this.qnachain.invoke({
       question: question,
-      player: player.name,
-      context
+      context: context
     })
     
     return response;
