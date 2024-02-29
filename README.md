@@ -1,5 +1,5 @@
 
-# jpn-autohost: A Custom Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr))
+# jpn-autohost: A Custom Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr)
 
 ## Features I added:
 - Regulation Check for Difficulty changing mods like DT, HR.
