@@ -260,7 +260,7 @@ export class AutoHostSelector extends LobbyPlugin {
   }
 
   private onChatCommand(player: Player, command: string, param: string): void {
-    if (command.startsWith('!q')) {
+    if (command === '!q' || command === '!queue') {
       this.ShowHostQueue();
     } else if (player.isAuthorized) {
       if (command === '*reorder' || command === '*order') {

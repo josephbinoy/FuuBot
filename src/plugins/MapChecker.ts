@@ -166,7 +166,7 @@ export class MapChecker extends LobbyPlugin {
   }
 
   private onReceivedChatCommand(command: string, param: string, player: Player): void {
-    if (command === '!r') {
+    if (command === '!r' || command === '!regulation') {
       this.lobby.SendMessageWithCoolTime(this.getRegulationDescription(), 'regulation', 10000);
       return;
     }
@@ -174,7 +174,7 @@ export class MapChecker extends LobbyPlugin {
       if(player.overrides < this.maxOverrides){
         this.override = true;
         player.overrides++;
-        this.lobby.SendMessage('Go ahead and pick your map. Type !ask to ask the bot for help.');
+        this.lobby.SendMessage('Go ahead and pick your map. Type !help for help.');
       }
       else
         this.lobby.SendMessage('Sorry! You have forced too many maps today. (Maximum 3)');
