@@ -23,16 +23,17 @@
 |Command|Description|
 |:--|:--|
 |`!ask <question>`| Ask the bot any question. It can be about the lobby or osu in general.|
-|`!q`| Shows host queue.|
+|`!timeleft`| Shows how much time is left for current match to end. |
+|`!q or !queue`| Shows host queue.|
 |`!skip`| Triggers vote to skip current host.|
 |`!start`| Triggers vote start the match.|
 |`!abort`| Triggers vote abort the match. Use when the match is stuck.|
 |`!update`| Updates current selected map to the latest version. Use when a host picks an outdated map.|
-|`!r`| Shows any current regulations.|
+|`!r or !regulation`| Shows any current regulations.|
 |`!mirror`| Request mirror link for current map.|
-|`!version`| Show bot version.||
-|`!info \| !help`| Show information about the bot.||
-|`!commands`| Lists all available commands.||
+|`!version`| Show bot version.|
+|`!info or !help`| Show information about the bot.|
+|`!commands`| Sends a PM to player with list of commands. |
 
 ## Host Commands
 
@@ -41,6 +42,7 @@
 |`!skip`| Transfers host to next player in the queue.||
 |`!start [seconds]`| Starts the match after a set time in seconds.|`!start 30`|
 |`!stop`| Stops active start timer.||
+|`!abort`| Aborts the currently running match.||
 |`!force`| Override detection and force pick any map within regulation. Maximum 3 chances.||
 
 ## Administrator Commands
