@@ -1,5 +1,5 @@
 
-# FuuBot: A Robust and Modern Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr)
+# FuuBot: A Robust and Modern Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original bot](https://github.com/Meowhal/osu-ahr)
 ## Are you tired of 
 - Overplayed/farm maps like Sound Chimera, Glory Days?
 - Obnoxious rap/phonk maps
