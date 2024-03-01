@@ -5,7 +5,7 @@
 - Obnoxious rap/phonk maps
 - That guy who always puts dt global
 - Dead lobbies were nobody says anything?
-## Say no more. FuuBot is here. Take a look at its features
+## Say no more. FuuBot is here. Find the regular features [here](#Features)
 
 ## Features I added:
 - Regulation Check for Difficulty changing mods like DT, HR.
@@ -106,7 +106,7 @@ Cli
 
 ```text
 > npm install
-> npx tsc
+> npm run build
 ```
 
 4. Create a file `./config/local.json`, use `./config/default.json` as template.
@@ -256,11 +256,7 @@ The match start timer will automatically activate after the host selects a map.
 + `enabled` : `boolean` Set true if you want to start the timer automatically.
 + `doClearHost`: `boolean` Send '!mp clearhost' after the timer starts.
 + `waitingTime`: `number` Number of seconds for the timer.
-
-## HistoryLoader Section
-
-+ `fetch_interval_ms`: `number` Time period between fetching the match history
-
+  
 ## HostSkipper Section
 
 Configs related to host-skip vote and automatic AFK host skip.
