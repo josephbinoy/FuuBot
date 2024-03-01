@@ -1,9 +1,9 @@
 
 # FuuBot: A Robust and Modern Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr)
 ## Are you tired of 
-- Overplayed/farm maps like Bass Slut, Sound Chimera
-- Graveyarded shit maps especially phonk maps
-- That guy who always puts dthr global
+- Overplayed/farm maps like Sound Chimera, Glory Days?
+- Obnoxious rap/phonk maps
+- That guy who always puts dt global
 - Dead lobbies were nobody says anything?
 ## Say no more. FuuBot is here. Take a look at its features
 
