@@ -99,8 +99,8 @@ Cli
 2. Clone this repo
 
 ```text
-> git clone https://github.com/josephbinoy/jpn-autohost
-> cd jpn-autohost
+> git clone https://github.com/josephbinoy/FuuBot
+> cd FuuBot
 ```
 3. Install npm dependencies. Then compile.
 
@@ -135,7 +135,7 @@ starting up...
 Connecting to Osu Bancho ...
 Connected :D
 
-=== Welcome to jpn-autohost ===
+=== Welcome to FuuBot Menu ===
 
 MainMenu Commands
   [make <Lobby_name>] Make a lobby.  e.g. 'make 5* auto host rotation'
