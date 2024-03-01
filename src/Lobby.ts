@@ -583,9 +583,6 @@ export class Lobby {
     if (command === '!info') {
       this.showInfoMessage();
     }
-    if (command === '!version') {
-      this.showVersionMessage();
-    }
     if (command === '!commands'){
       this.sendCommandListPM(player);
     }
@@ -1001,26 +998,12 @@ export class Lobby {
     this.SendMessageWithCoolTime(this.option.info_message, 'infomessage', this.option.info_message_cooltime_ms);
   }
 
-  private showVersionMessage(): void {
-    const version = this.tryGetVersion();
-    this.SendMessageWithCoolTime(`osu! Auto Host Rotation Bot v. ${version}`, 'versionmessage', this.option.info_message_cooltime_ms);
-  }
-
   private sendInfoMessagePM(player: Player): void {
     this.SendPrivateMessageWithCoolTime(this.option.info_message, player.escaped_name, 'infomessage', this.option.info_message_cooltime_ms);
   }
 
   private sendCommandListPM(player: Player): void {
     this.SendPrivateMessageWithCoolTime(this.option.command_list, player.escaped_name, 'commandlist', this.option.command_list_cooltime_ms);
-  }
-
-  private tryGetVersion(): string {
-    if (process.env.npm_package_version) return process.env.npm_package_version;
-    try {
-      return require('../package.json').version ?? '0.0.0';
-    } catch {
-      return '0.0.0';
-    }
   }
 
   // Grant privileges to the owner

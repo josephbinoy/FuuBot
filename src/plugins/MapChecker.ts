@@ -363,16 +363,16 @@ export class MapChecker extends LobbyPlugin {
   }
 
   private acceptMap(map: BeatmapCache): void {
-    this.SendPluginMessage('validatedMap');
-    this.lobby.isValidMap = true;
-    this.lastMapId = this.lobby.mapId;
-    this.override=false;
     if (map.beatmapset) {
       const desc = this.getMapDescription(map, map.beatmapset);
       this.lobby.SendMessage(`!mp map ${this.lobby.mapId} ${this.option.gamemode.value} | ${desc}`);
     } else {
       this.lobby.SendMessage(`!mp map ${this.lobby.mapId} ${this.option.gamemode.value}`);
     }
+    this.SendPluginMessage('validatedMap');
+    this.lobby.isValidMap = true;
+    this.lastMapId = this.lobby.mapId;
+    this.override=false;
   }
 
   private getMapDescription(map: BeatmapCache, set: Beatmapset) {

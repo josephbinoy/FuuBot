@@ -31,7 +31,6 @@
 |`!update`| Updates current selected map to the latest version. Use when a host picks an outdated map.|
 |`!r or !regulation`| Shows any current regulations.|
 |`!mirror`| Request mirror link for current map.|
-|`!version`| Show bot version.|
 |`!info or !help`| Show information about the bot.|
 |`!commands`| Sends a PM to player with list of commands. |
 
