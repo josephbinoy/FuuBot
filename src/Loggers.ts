@@ -6,9 +6,7 @@ function selectConfigPath() {
   const exeFile = process.argv[1];
   const hasVerboseFlag = process.argv.some(v => v === '--verbose' || v === '-v');
 
-  if (exeFile.includes('discord')) {
-    return './config/log_discord.json';
-  } else if (exeFile.includes('mocha')) {
+  if (exeFile.includes('mocha')) {
     if (hasVerboseFlag) {
       return './config/log_mocha_verbose.json';
     } else {

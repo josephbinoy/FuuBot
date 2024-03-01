@@ -12,9 +12,6 @@
     "start": "node dist/cli/index.js",
     "node:cli": "node dist/cli/index.js",
     "dev:cli": "ts-node src/cli/index.ts",
-    "test": "mocha -r ts-node/register src/tests/*Test.ts",
-    "test:watch": "mocha -r ts-node/register src/tests/*Test.ts --watch --watch-files src/**/*.ts",
-    "trial": "ts-node src/trials/index.ts",
     "dev:web": "ts-node src/web/index.ts",
     "dev:log": "ts-node src/cli/LogServer.ts"
   },

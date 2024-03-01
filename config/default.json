@@ -10,13 +10,13 @@
   "Lobby": {
     "authorized_users": [],
     "listref_duration_ms": 1000,
-    "info_message": "Custom autohost bot created by me based on the [https://github.com/Meowhal/osu-ahr osu-ahr] bot.\nFor command list type !commands",
-    "info_message_cooltime_ms": 60000,
+    "info_message": "Custom autohost bot created by me based on the [https://github.com/Meowhal/osu-ahr osu-ahr] bot\nAsk the bot osu questions with !ask <question>\nTo know more about commands, ask the bot for commands or type !commands to get a PM with all the commands",
+    "info_message_cooltime_ms": 20000,
     "stat_timeout_ms": 5000,
     "info_message_announcement_interval_ms": 0,
     "transferhost_timeout_ms": 5000,
-    "command_list": "Player Commands\n!q                              Shows host queue.\n!skip                         Triggers vote to skip current host.\n!start                        Triggers vote start the match.\n!abort                       Triggers vote abort the match. Use when the match is stuck.\n!update                    Updates current selected map to the latest version. Use when a host picks an outdated map.\n!r                                Shows any current regulations.\n!mirror                      Request mirror link for current map.\n!version                    Show bot version.\n!info                          Show information about the bot.\n!commands             Lists all available commands.\n‎\nHost Commands\n!skip                          Transfers host to next player in the queue.\n!start [seconds]      Starts the match after a set time in seconds.\n!stop                          Stops active start timer.\n!override                  Override detection and pick any map within regulation. Maximum 3 chances.",
-    "command_list_cooltime_ms": 60000
+    "command_list": "Player Commands\n!ask <question>   Ask the bot any question. It can be about the lobby or osu in general\n!timeleft                 Shows how much time is left for current match to end\n!q or !queue           Shows host queue\n!skip                         Triggers vote to skip current host\n!start                        Triggers vote start the match\n!abort                       Triggers vote abort the match. Use when the match is stuck\n!update                    Updates current selected map to the latest version. Use when a host picks an outdated map\n!r or !regulation     Shows any current regulations\n!mirror                     Request mirror link for current map\n!version                   Show bot version\n!info or !help          Show information about the bot\n!commands             Sends a PM with command list\n‎\nHost Commands\n!skip                          Transfers host to next player in the queue\n!start [seconds]      Starts the match after a set time in seconds\n!stop                          Stops active start timer\n!abort                        Aborts the currently running match.\n!force                        Override detection and force pick any map within regulation. Maximum 3 chances",
+    "command_list_cooltime_ms": 20000
   },
   "AfkKicker": {
     "enabled": true,
@@ -57,7 +57,7 @@
     "title": null
   },
   "LobbyTerminator": {
-    "terminate_time_ms": 60000
+    "terminate_time_ms": 7200000
   },
   "MapChecker": {
     "enabled": true,
