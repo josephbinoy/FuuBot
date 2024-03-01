@@ -125,7 +125,7 @@ Cli
 8. Launch the bot
 
 ```text
-> npm run start
+> npm start     (Note: To enable logging of word counter and api calls, include the --verbose or -v flag)
 starting up...
 Connecting to Osu Bancho ...
 Connected :D
