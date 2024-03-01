@@ -1,16 +1,24 @@
 
-# jpn-autohost: A Custom Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr)
+# FuuBot
+## A Robust and Modern Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr)
+### Are you tired of 
+- Overplayed/farm maps like Bass Slut, Sound Chimera
+- Graveyarded shit maps especially phonk maps
+- That guy who always puts dthr global
+- Dead lobbies were nobody says anything?
+
+## Say no more. FuuBot is here. Take a look at its features
 
 ## Features I added:
 - Regulation Check for Difficulty changing mods like DT, HR.
-- An LLM based Q&A Bot to answer osu related questions.
-- Match Summarisation at the end of every match.
+- An LLM based Q&A Bot to answer any questions about osu or help with the bot commands.
+- Match Summarisation at the end of every match that highlights the winner, FCs, highest acc player and more.
 - Only Japanese/Instrumental maps allowed. Can be overridden with !force.
 - Banned overplayed maps. I referred this [list](https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml) (Credit to this [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)).
 
 
 ## Features I removed:
-- Completely Removed Discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7
+- Completely Removed Discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7 (not headless)
 - Removed unnecessary directories and kept only the core files.
 - Removed unnecessary commands
 - Removed Periodic fetch/cache of match history and player profiles
