@@ -96,13 +96,13 @@ Cli
 + [Node.js](https://nodejs.org/) (Version 16.11.1 or Higher)
 + [Git](https://git-scm.com/)
 
-2. Clone this repo
+2. Clone this repository. Go inside the directory.
 
 ```text
 > git clone https://github.com/josephbinoy/FuuBot
 > cd FuuBot
 ```
-3. Install npm dependencies. Then compile.
+3. Install npm dependencies. Then build.
 
 ```text
 > npm install
