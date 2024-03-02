@@ -370,7 +370,7 @@ Issue the `!mp make` command to create a new lobby. Bot manages lobbies via IRC,
 
 ## Entering Lobby
 
-When you restart the bot, it will be able to re-enter the lobby it has already created. The bot will analyze the lobby history and try to restore the order of hosts.
+When you restart the bot, it will be able to re-enter the lobby it has already created. The bot will order the hosts based on slot order.
 
 ## IRC Chat
 
