@@ -1,11 +1,11 @@
 
-# FuuBot: A Robust and Modern Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original autohost bot](https://github.com/Meowhal/osu-ahr)
+# FuuBot: A Robust and Modern Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original bot](https://github.com/Meowhal/osu-ahr)
 ## Are you tired of 
-- Overplayed/farm maps like Bass Slut, Sound Chimera
-- Graveyarded shit maps especially phonk maps
-- That guy who always puts dthr global
+- Overplayed/farm maps like Sound Chimera, Glory Days?
+- Obnoxious rap/phonk maps
+- That guy who always puts dt global
 - Dead lobbies were nobody says anything?
-## Say no more. FuuBot is here. Take a look at its features
+## Say no more. FuuBot is here. Find the regular features [here](#Features)
 
 ## Features I added:
 - Regulation Check for Difficulty changing mods like DT, HR.
@@ -20,6 +20,7 @@
 - Removed unnecessary directories and kept only the core files.
 - Removed unnecessary commands
 - Removed Periodic fetch/cache of match history and player profiles
+- Removed history analysis to restore host order when re-entering lobby as I felt it was unnecessary. Bot will reorder based on slot order.
 - Removed outdated api calls and website based fetching. The bot strictly uses [osu! api v2](https://osu.ppy.sh/docs/index.html)
   
 # Command List
@@ -96,17 +97,17 @@ Cli
 + [Node.js](https://nodejs.org/) (Version 16.11.1 or Higher)
 + [Git](https://git-scm.com/)
 
-2. Clone this repo
+2. Clone this repository. Go inside the directory.
 
 ```text
 > git clone https://github.com/josephbinoy/FuuBot
 > cd FuuBot
 ```
-3. Install npm dependencies. Then compile.
+3. Install npm dependencies. Then build.
 
 ```text
 > npm install
-> npx tsc
+> npm run build
 ```
 
 4. Create a file `./config/local.json`, use `./config/default.json` as template.
@@ -256,11 +257,7 @@ The match start timer will automatically activate after the host selects a map.
 + `enabled` : `boolean` Set true if you want to start the timer automatically.
 + `doClearHost`: `boolean` Send '!mp clearhost' after the timer starts.
 + `waitingTime`: `number` Number of seconds for the timer.
-
-## HistoryLoader Section
-
-+ `fetch_interval_ms`: `number` Time period between fetching the match history
-
+  
 ## HostSkipper Section
 
 Configs related to host-skip vote and automatic AFK host skip.
@@ -374,7 +371,7 @@ Issue the `!mp make` command to create a new lobby. Bot manages lobbies via IRC,
 
 ## Entering Lobby
 
-When you restart the bot, it will be able to re-enter the lobby it has already created. The bot will analyze the lobby history and try to restore the order of hosts.
+When you restart the bot, it will be able to re-enter the lobby it has already created. The bot will order the hosts based on slot order.
 
 ## IRC Chat
 
