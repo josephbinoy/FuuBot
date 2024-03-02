@@ -20,6 +20,7 @@
 - Removed unnecessary directories and kept only the core files.
 - Removed unnecessary commands
 - Removed Periodic fetch/cache of match history and player profiles
+- Removed history analysis to restore host order when re-entering lobby as I felt it was unnecessary. Bot will reorder based on slot order.
 - Removed outdated api calls and website based fetching. The bot strictly uses [osu! api v2](https://osu.ppy.sh/docs/index.html)
   
 # Command List
