@@ -11,6 +11,7 @@ export class HistoryLoader extends LobbyPlugin {
   leaderboard: PromptScore[] = [];
   best_acc: number = 0;
   best_accers: string[] = [];
+  fcers: string[] = [];
 
   constructor(lobby: Lobby) {
     super(lobby, 'HistoryLoader', 'history');
@@ -37,14 +38,15 @@ export class HistoryLoader extends LobbyPlugin {
           this.latest_event = latest_event;
           this.checkAndResetLobbyName(latest_event);
           const latest_game = latest_event?.game;
-          this.createLeaderboardAndAccers(latest_game);
+          this.analyzeAndCreatePerfMetrics(latest_game);
           if (this.leaderboard.length > 1) {
             const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
-            const summary = await getSummary(this.lobby.maxCombo, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc);
+            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc);
             this.lobby.SendMessage(summary);
             this.leaderboard = [];
             this.best_acc = 0;
             this.best_accers = [];
+            this.fcers = [];
           }
         }
       } 
@@ -54,10 +56,11 @@ export class HistoryLoader extends LobbyPlugin {
     });
   }
 
-  createLeaderboardAndAccers(game: Game | undefined) {
+  analyzeAndCreatePerfMetrics(game: Game | undefined) {
     if (game == undefined) return;
     for (const score of game.scores) {
       if (score.passed == false) continue;
+      score.accuracy = parseFloat((score.accuracy * 100).toFixed(2))
       let name = [...this.lobby.players].find(p => p.id == score.user_id)?.name;
       if (name == undefined) {
         name = this.searchUsers(score.user_id) ?? 'unknown';
@@ -65,9 +68,12 @@ export class HistoryLoader extends LobbyPlugin {
       const pscore: PromptScore = {
         name: name,
         score: score.score,
-        combo: parseFloat((score.max_combo * 100).toFixed(2))
+        combo: score.max_combo,
+        mods: score.mods.join(',') ?? ''
       }
       this.leaderboard.push(pscore);
+      if (score.statistics.count_miss == 0 && this.lobby.maxCombo - score.max_combo < 15)
+        this.fcers.push(name)
       if (score.accuracy > this.best_acc) {
         this.best_acc = score.accuracy;
         this.best_accers = [name];

@@ -7,9 +7,8 @@ import { URL } from 'url';
 import { promises as fs } from 'fs';
 import { UserProfile, trimProfile } from './UserProfile';
 import { History } from './HistoryTypes';
-import { Beatmap, Beatmapset } from './Beatmapsets';
+import { Beatmapset } from './Beatmapsets';
 import { FetchBeatmapError, FetchBeatmapErrorReason} from './BeatmapRepository';
-import { FetchProfileError, FetchProfileErrorReason } from './ProfileRepository';
 import { getLogger, Logger } from '../Loggers';
 
 export interface ApiToken {
@@ -242,44 +241,6 @@ class WebApiClientClass {
     throw new Error('Failed to access the API');
   }
 
-  async getChatUpdates() {
-    const data = await this.accessApi('https://osu.ppy.sh/api/v2/chat/updates', {
-      method: 'GET',
-      params: {
-        'since': '0'
-      }
-    });
-    return data;
-  }
-
-  async getChannels() {
-    const data = await this.accessApi('https://osu.ppy.sh/api/v2/chat/channels', {
-      method: 'GET'
-    });
-    return data;
-  }
-
-  async getMe() {
-    const data = await this.accessApi('https://osu.ppy.sh/api/v2/me/osu', {
-      method: 'GET'
-    });
-    return data;
-  }
-
-  async getNotifications() {
-    const data = await this.accessApi('https://osu.ppy.sh/api/v2/notifications', {
-      method: 'GET'
-    });
-    return data;
-  }
-
-  async getUserRecentActivity(id: number) {
-    const data = await this.accessApi(`https://osu.ppy.sh/api/v2/users/${id}/recent_activity`, {
-      method: 'GET'
-    });
-    return data;
-  }
-
   async getUser(id: number | string): Promise<UserProfile | null> {
     try {
       const data = await this.accessApi(`https://osu.ppy.sh/api/v2/users/${id}/osu`, {
@@ -293,29 +254,6 @@ class WebApiClientClass {
       }
       throw e;
     }
-  }
-
-  async getPlayer(userID: number, mode: string): Promise<UserProfile> {
-    try {
-      const data = await this.accessApi(`https://osu.ppy.sh/api/v2/users/${userID}/${mode}`, {
-        method: 'GET'
-      });
-      data.get_time = Date.now();
-      return data;
-    } catch (e: any) {
-      if (e.response?.status === 404) {
-        throw new FetchProfileError(FetchProfileErrorReason.NotFound);
-      }
-      throw new FetchProfileError(FetchProfileErrorReason.Unknown, e.message);
-    }
-  }
-
-  async lookupBeatmap(mapid: number): Promise<Beatmap> {
-    const data = await this.accessApi(`https://osu.ppy.sh/api/v2/beatmaps/lookup?id=${mapid}`, {
-      method: 'GET'
-    });
-    data.get_time = Date.now();
-    return data;
   }
 
   async lookupBeatmapset(mapid: number): Promise<Beatmapset> {

@@ -17,6 +17,7 @@ export type PromptScore = {
   'name': string,
   'score': number,
   'combo': number,
+  'mods': string
 }
 
 export type Event = {

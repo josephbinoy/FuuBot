@@ -2,7 +2,6 @@ import { Lobby } from '../Lobby';
 import { Player } from '../Player';
 import { LobbyPlugin } from './LobbyPlugin';
 import { BeatmapRepository } from '../webapi/BeatmapRepository';
-import { ProfileRepository } from '../webapi/ProfileRepository';
 import { getConfig } from '../TypedConfig';
 
 export interface CacheCleanerOption {
@@ -64,7 +63,6 @@ export class CacheCleaner extends LobbyPlugin {
   private async clearCache() {
     try {
       BeatmapRepository.discardExpiredCache(this.option.intervalMs);
-      ProfileRepository.discardExpiredCache(this.option.intervalMs);
       if (global.gc) {
         global.gc();
       }
