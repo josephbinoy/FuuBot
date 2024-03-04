@@ -1,5 +1,6 @@
 
 # FuuBot: A Robust and Modern Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original bot](https://github.com/Meowhal/osu-ahr)
+Also referred matte-ek's [bot](https://github.com/matte-ek/BanchoMultiplayerBot)
 ## Are you tired of 
 - Overplayed/farm maps like Sound Chimera, Glory Days?
 - Obnoxious rap/phonk maps
@@ -14,7 +15,7 @@
 - (Upcoming) Spam kicker kicks out players that spam chat 
 - Match Summarisation at the end of every match that highlights the winner, FCs, highest acc player and more.
 - Only Japanese/Instrumental maps allowed. Can be overridden with !force.
-- Banned overplayed maps. I referred this [list](https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml) (Credit to this [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)).
+- Banned overplayed maps. I referred this [list](https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml) (Credit to matte-ek's [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)).
 
 
 ## Features I removed:
