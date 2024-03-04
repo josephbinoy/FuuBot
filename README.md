@@ -9,7 +9,9 @@
 
 ## Features I added:
 - Regulation Check for Difficulty changing mods like DT, HR.
-- An LLM based Q&A Bot to answer any questions about osu or help with the bot commands.
+- An LLM based Q&A Bot to answer any questions about osu or help with the bot commands. Use with !ask
+- Use !timeleft to see how much time is left for current match to end
+- (Upcoming) Spam kicker kicks out players that spam chat 
 - Match Summarisation at the end of every match that highlights the winner, FCs, highest acc player and more.
 - Only Japanese/Instrumental maps allowed. Can be overridden with !force.
 - Banned overplayed maps. I referred this [list](https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml) (Credit to this [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)).
