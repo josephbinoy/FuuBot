@@ -129,9 +129,10 @@ Cli
   }
 }
 ```
-
-7. Configure the bot (Optional). See the [Configuration](#configuration) section for details.
-8. Launch the bot
+7. Get openai API key from [here](https://platform.openai.com/account/billing/overview)
+8. Create a file called '.env' in root folder and paste OPENAI_API_KEY=your_api_key
+9. Configure the bot (Optional). See the [Configuration](#configuration) section for details.
+10. Launch the bot
 
 ```text
 > npm start     (Note: To enable logging of word counter and api calls, include the --verbose or -v flag)

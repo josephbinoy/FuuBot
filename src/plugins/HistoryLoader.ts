@@ -69,7 +69,7 @@ export class HistoryLoader extends LobbyPlugin {
         name: name,
         score: score.score,
         combo: score.max_combo,
-        mods: score.mods.join(',') ?? ''
+        mods: score.mods.join(',') ?? 'No mods'
       }
       this.leaderboard.push(pscore);
       if (score.statistics.count_miss == 0 && this.lobby.maxCombo - score.max_combo < 15)

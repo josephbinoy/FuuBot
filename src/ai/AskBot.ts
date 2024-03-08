@@ -108,7 +108,7 @@ export class AskBot extends LobbyPlugin {
     }
     this.timeInvoked = now;
     if (question.length == 0) {
-      throw new Error('Please ask a question! Usage: !ask <question>');
+      throw new Error('Please ask a question! (osu related only) Usage: !ask <question>');
     }
     const context = await this.retriever.getRelevantDocuments(question);
     const response = await this.qnachain.invoke({

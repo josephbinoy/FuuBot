@@ -10,7 +10,7 @@
   "Lobby": {
     "authorized_users": [],
     "listref_duration_ms": 1000,
-    "info_message": "Custom autohost bot created by me based on the [https://github.com/Meowhal/osu-ahr osu-ahr] bot\nAsk the bot osu questions with !ask <question>\nTo know more about commands, ask the bot for commands or type !commands to get a PM with all the commands",
+    "info_message": "Useful commands: !timeleft, !force, !mirror, !q\nTo know more about commands, ask the bot about a command or type !commands to get command list PM",
     "info_message_cooltime_ms": 20000,
     "stat_timeout_ms": 5000,
     "info_message_announcement_interval_ms": 0,
