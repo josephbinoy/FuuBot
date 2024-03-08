@@ -174,10 +174,10 @@ export class MapChecker extends LobbyPlugin {
       if(player.overrides < this.maxOverrides){
         this.override = true;
         player.overrides++;
-        this.lobby.SendMessage('Go ahead and pick your map. Type !help for help.');
+        this.lobby.SendMessage('Go ahead and pick your map! Type !info for help.');
       }
       else
-        this.lobby.SendMessage('Sorry! You have forced too many maps today. (Maximum 3)');
+        this.lobby.SendMessage(`Sorry! You have forced too many maps this session. (Maximum ${this.maxOverrides})`);
       return;
     }
     if(command === '!timeleft' && this.lobby.isMatching){
