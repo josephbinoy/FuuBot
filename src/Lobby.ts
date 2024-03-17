@@ -556,6 +556,7 @@ export class Lobby {
       case BanchoResponseType.Unhandled:
         if (this.checkListRef(message)) break;
         this.logger.debug(`Detected an unhandled bancho response:\n${message}`);
+        this.SendMessage(`Unhandled Bancho Error: Lobby might become unresponsive. Blame peppy :P`);
         break;
     }
     this.ReceivedBanchoResponse.emit({ message, response: c });
