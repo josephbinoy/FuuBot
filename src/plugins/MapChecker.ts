@@ -108,6 +108,7 @@ export class MapChecker extends LobbyPlugin {
             //get mods
             this.lobby.ParsedSettings.once(a => {
               this.activeMods = a.result.activeMods.replace(/, Freemod|Freemod, |^Freemod$/, '');
+              this.checkAndResetLobbyName();
               resolve();
             });
 
@@ -122,6 +123,14 @@ export class MapChecker extends LobbyPlugin {
     }
     this.cancelCheck();
     this.lobby.mapStartTimeMs = Date.now()
+  }
+
+  private checkAndResetLobbyName() {
+    if(this.lobby.lobbyName !== this.lobby.fixedTitle){
+        this.logger.info(`Lobby name has been changed: ${this.lobby.fixedTitle} -> ${this.lobby.lobbyName}, Host: ${this.lobby.host?.name}. Resetting...`);
+        this.lobby.SendMessage(`!mp name ${this.lobby.fixedTitle}`);
+        this.lobby.lobbyName = this.lobby.fixedTitle;
+    }
   }
  
   private async checkForMods() {

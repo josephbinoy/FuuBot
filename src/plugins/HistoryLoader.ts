@@ -36,7 +36,6 @@ export class HistoryLoader extends LobbyPlugin {
         latest_event= this.getLatestGameEvent(this.history);
         if(latest_event != null && latest_event != this.latest_event){
           this.latest_event = latest_event;
-          this.checkAndResetLobbyName(latest_event);
           const latest_game = latest_event?.game;
           this.analyzeAndCreatePerfMetrics(latest_game);
           if (this.leaderboard.length > 1) {
@@ -101,15 +100,5 @@ export class HistoryLoader extends LobbyPlugin {
       }
     }
     return null;
-  }
-
-  checkAndResetLobbyName(ev: Event) {
-    if (ev.detail.text && ev.detail.text !== this.lobby.lobbyName) {
-      const newName = ev.detail.text;
-      const oldName = this.lobby.lobbyName;
-      this.logger.info(`Lobby name has been changed: ${oldName} -> ${newName}, Host: ${this.lobby.host?.name}. Resetting...`);
-      this.lobby.SendMessage(`!mp name ${oldName}`);
-      this.lobby.lobbyName = newName;
-    }
   }
 }
