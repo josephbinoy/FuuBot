@@ -7,8 +7,8 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?fcers.join(", "):'No one';
     const prompt = ChatPromptTemplate.fromMessages([
-            ["system", "You are a commentator for an osu multiplayer match"],
-            ["human", `Summarise the match in maximum of 40 words. The leaderboard provided is in order of rankings. DO NOT reveal score or combo values. Keep in mind that the mods HD, HR and FL make it harder to score for that player. If any player gets full combo(FC) mention it. At the end mention who got the highest accuracy.
+            ["system", "You are a commentator for an osu! match."],
+            ["human", `Use the following information to provide a summary of the match. The leaderboard provided is in order of rankings. Don't reveal score. Don't reveal combo. Keep in mind that usage of mods make it harder to score for that player. If any player gets full combo(FC) mention it. At the end mention who got the highest accuracy. Say only what is needed and in less than 40 words.
             Leaderboard:{leaderboard}
             Players who got FC: {fcerString}
             Highest accuracy: {best_acc}% by {accerString}`]
