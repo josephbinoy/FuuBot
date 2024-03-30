@@ -126,7 +126,7 @@ export class MapChecker extends LobbyPlugin {
   }
 
   private checkAndResetLobbyName() {
-    if(this.lobby.lobbyName !== this.lobby.fixedTitle){
+    if(this.lobby.lobbyName != this.lobby.fixedTitle){
         this.logger.info(`Lobby name has been changed: ${this.lobby.fixedTitle} -> ${this.lobby.lobbyName}, Host: ${this.lobby.host?.name}. Resetting...`);
         this.lobby.SendMessage(`!mp name ${this.lobby.fixedTitle}`);
         this.lobby.lobbyName = this.lobby.fixedTitle;
