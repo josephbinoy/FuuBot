@@ -42,11 +42,11 @@ export class HistoryLoader extends LobbyPlugin {
             const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
             const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc);
             this.lobby.SendMessage(summary);
-            this.leaderboard = [];
-            this.best_acc = 0;
-            this.best_accers = [];
-            this.fcers = [];
           }
+          this.leaderboard = [];
+          this.best_acc = 0;
+          this.best_accers = [];
+          this.fcers = [];
         }
       } 
       catch (e: any) {
@@ -67,8 +67,8 @@ export class HistoryLoader extends LobbyPlugin {
       const pscore: PromptScore = {
         name: name,
         score: score.score,
-        combo: score.max_combo,
-        mods: score.mods.join(',') ?? 'No mods'
+        miss_count: score.statistics.count_miss,
+        mods_used: score.mods.join(',') ?? 'None'
       }
       this.leaderboard.push(pscore);
       if (score.statistics.count_miss == 0 && this.lobby.maxCombo - score.max_combo < 15)
