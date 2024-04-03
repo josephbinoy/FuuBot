@@ -12,6 +12,7 @@ export class HistoryLoader extends LobbyPlugin {
   best_acc: number = 0;
   best_accers: string[] = [];
   fcers: string[] = [];
+  no_missers: string[] = [];
 
   constructor(lobby: Lobby) {
     super(lobby, 'HistoryLoader', 'history');
@@ -40,13 +41,14 @@ export class HistoryLoader extends LobbyPlugin {
           this.analyzeAndCreatePerfMetrics(latest_game);
           if (this.leaderboard.length > 1) {
             const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
-            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc);
+            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc, this.no_missers);
             this.lobby.SendMessage(summary);
           }
           this.leaderboard = [];
           this.best_acc = 0;
           this.best_accers = [];
           this.fcers = [];
+          this.no_missers = [];
         }
       } 
       catch (e: any) {
@@ -67,10 +69,11 @@ export class HistoryLoader extends LobbyPlugin {
       const pscore: PromptScore = {
         name: name,
         score: score.score,
-        miss_count: score.statistics.count_miss,
         mods_used: score.mods.join(',') ?? 'None'
       }
       this.leaderboard.push(pscore);
+      if (score.statistics.count_miss == 0)
+        this.no_missers.push(name)
       if (score.statistics.count_miss == 0 && this.lobby.maxCombo - score.max_combo < 15)
         this.fcers.push(name)
       if (score.accuracy > this.best_acc) {
