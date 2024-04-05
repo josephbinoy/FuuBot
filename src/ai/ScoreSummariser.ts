@@ -7,7 +7,7 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
     const noMissString = no_missers.length!=0?'Players who sliderbroke: '+no_missers.join(", "):'';
-    const fcInstr=(fcers.length!=0)?'If any player gets full combo (FC), mention them.':'';
+    const fcInstr=(fcers.length!=0)?'If any players get full combo (FC), mention them.':'';
     const sliderInstr= (no_missers.length!=0)?'A sliderbreak means that the player got 0 misses but did not FC. If any player sliderbroke, mention them.':'';
     const prompt = ChatPromptTemplate.fromMessages([
             ["system", "You are a commentator for an osu! match. The objective of the game is to get highest score by clicking circles on the screen."],
