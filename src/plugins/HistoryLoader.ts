@@ -73,9 +73,10 @@ export class HistoryLoader extends LobbyPlugin {
       }
       this.leaderboard.push(pscore);
       if (score.statistics.count_miss == 0)
-        this.no_missers.push(name)
-      if (score.statistics.count_miss == 0 && this.lobby.maxCombo - score.max_combo < 15)
-        this.fcers.push(name)
+        if(this.lobby.maxCombo - score.max_combo < 15)
+          this.fcers.push(name)
+        else
+          this.no_missers.push(name)
       if (score.accuracy > this.best_acc) {
         this.best_acc = score.accuracy;
         this.best_accers = [name];
