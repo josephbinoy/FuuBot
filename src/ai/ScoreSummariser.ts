@@ -11,7 +11,7 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
     const sliderInstr= (no_missers.length!=0)?'A sliderbreak means that the player got 0 misses but did not FC. If any player sliderbroke, mention them.':'';
     const prompt = ChatPromptTemplate.fromMessages([
             ["system", "You are a commentator for an osu! match. The objective of the game is to get highest score by clicking circles on the screen."],
-            ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. Keep in mind that usage of mods make it harder to score for that player. Do not reveal scores. Refer to mods by their acronym only. At the end mention who got the highest accuracy.
+            ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. Keep in mind that usage of mods make it harder to score for that player. Do not reveal scores. Do not specify mod name, only use mod acronym like HD, HR etc. At the end mention who got the highest accuracy.
             {fcInstr}{sliderInstr}
             Leaderboard:{leaderboard}
             {fcerString}
