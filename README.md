@@ -42,7 +42,7 @@ Also referred matte-ek's [bot](https://github.com/matte-ek/BanchoMultiplayerBot)
 |`!r or !regulation`| Shows any current regulations.|
 |`!mirror`| Request mirror link for current map.|
 |`!info or !help`| Show information about the bot.|
-|`!commands`| Sends a PM to player with list of commands. |
+|`!commands`| Sends a PM to player with link to command list. |
 
 ## Host Commands
 
