@@ -481,12 +481,12 @@ export class MapValidator {
 
     else if(this.overplayedIDs.includes(map.beatmapset_id) || this.overplayedJP.includes(map.beatmapset?.title || '')){
       rate=69;
-      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml overplayed maps list]. Please pick another map.';
+      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map.';
     }
 
     else if(override && this.overplayedOverall.includes(map.beatmapset?.title || '')){
       rate=69;
-      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml overplayed maps list]. Please pick another map.';
+      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map.';
     }
 
     else if(!override && map.beatmapset?.language?.name === 'Unspecified'){
