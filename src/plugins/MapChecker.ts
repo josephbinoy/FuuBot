@@ -492,7 +492,7 @@ export class MapValidator {
     else if(!override && map.beatmapset?.language?.name === 'Unspecified'){
       if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
         rate=69;
-        violationMsg='only Japanese and Instrumental maps are allowed in the lobby! Maps with missing metadata may be accidentally rejected\nType !force to pick the map anyway';
+        violationMsg=`map language couldn't be determined due to missing metadata. \nType !force to pick the map anyway`;
       }
     }
     else if(!override && map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental'){
