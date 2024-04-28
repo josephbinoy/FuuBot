@@ -3,7 +3,7 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import 'dotenv/config';
 
-export async function getSummary(fcers: string[], leaderboard: string, bestaccers: string[], best_acc: number, no_missers: string[]): Promise<string> {
+export async function getSummary(fcers: string[], leaderboard: string, bestaccers: string[], best_acc: number, no_missers: string[], winner: string): Promise<string> {
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
     const noMissString = no_missers.length!=0?'Players who sliderbroke: '+no_missers.join(", "):'';
@@ -16,7 +16,8 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
             Leaderboard:{leaderboard}
             {fcerString}
             {noMissString}
-            Highest accuracy: {best_acc}% by {accerString}`]
+            Highest accuracy: {best_acc}% by {accerString}
+            Match Winner: {winner}`]
     ])
     const llm = new ChatOpenAI({ modelName: "gpt-3.5-turbo", temperature: 0 });
 
@@ -29,7 +30,8 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
         accerString:accerString,
         noMissString:noMissString,
         fcInstr:fcInstr,
-        sliderInstr:sliderInstr
+        sliderInstr:sliderInstr,
+        winner: winner
     });
     return summary;
 }

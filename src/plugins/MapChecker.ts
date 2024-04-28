@@ -100,7 +100,7 @@ export class MapChecker extends LobbyPlugin {
     }
     if (this.option.enabled) {
       if (!this.lobby.isValidMap){
-        this.lobby.SendMessage(`!mp abort\nThe match was aborted because map didn't get registered in time or is not allowed. If it didn't get registered, please change the map to a different one and then repick your map.`)
+        this.lobby.SendMessage(`!mp abort\nThe match was aborted because map didn't get validated or previous map was repicked! Please change the map`)
       }
       else if (this.lobby.SendMessageWithCoolTime('!mp settings', 'modcheck', 5000)) {
         try {

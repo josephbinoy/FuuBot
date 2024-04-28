@@ -41,7 +41,7 @@ export class HistoryLoader extends LobbyPlugin {
           this.analyzeAndCreatePerfMetrics(latest_game);
           if (this.leaderboard.length > 1) {
             const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
-            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc, this.no_missers);
+            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc, this.no_missers, sortedLeaderboard[0].name);
             this.lobby.SendMessage(summary);
           }
           this.leaderboard = [];
