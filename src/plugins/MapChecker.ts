@@ -116,7 +116,10 @@ export class MapChecker extends LobbyPlugin {
               reject();
             }, 5000);
           });
-        } finally {
+        } catch{
+          this.logger.info(`Failed to get mods. The match will start without checking mods`);
+        }
+        finally {
           this.checkForMods();
         }
       }
@@ -134,18 +137,23 @@ export class MapChecker extends LobbyPlugin {
   }
  
   private async checkForMods() {
+    try {
     let starRating = 0;
-    if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
-      const modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
-      starRating = await WebApiClient.getDifficultyRating(this.checkingMapId, modList);
-      this.activeMods = '';
-    }
-    if (starRating && this.option.star_min > 0 && starRating < this.option.star_min) {
-      this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map below regulation.');
-    }
+      if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
+        const modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
+        starRating = await WebApiClient.getDifficultyRating(this.checkingMapId, modList);
+        this.activeMods = '';
+      }
+      if (starRating && this.option.star_min > 0 && starRating < this.option.star_min) {
+        this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map below regulation.');
+      }
 
-    else if (starRating && this.option.star_max > 0 && this.option.star_max < starRating) {
-      this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation.');
+      else if (starRating && this.option.star_max > 0 && this.option.star_max < starRating) {
+        this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation.');
+      }
+    }
+    catch (e: any) {
+      this.logger.info(`Failed to get star rating. The match will start without checking star rating`);
     }
   }
   private async onBeatmapChanged(mapId: number, mapTitle: string) {
@@ -165,7 +173,11 @@ export class MapChecker extends LobbyPlugin {
               reject();
             }, 5000);
           });
-        } finally {
+        } 
+        catch (e:any) {
+          this.logger.info(`Failed to get mods. The beatmap will be checked without mods.`);
+        }
+        finally {
           this.check(mapId, mapTitle);
         }
       } else {
