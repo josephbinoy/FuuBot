@@ -110,12 +110,17 @@ export class AskBot extends LobbyPlugin {
     if (question.length == 0) {
       throw new Error('Please ask a question! (osu related only) Usage: !ask <question>');
     }
-    const context = await this.retriever.getRelevantDocuments(question);
-    const response = await this.qnachain.invoke({
-      question: question,
-      context: context
-    })
-    
-    return response;
+    try{
+      const context = await this.retriever.getRelevantDocuments(question);
+      const response = await this.qnachain.invoke({
+        question: question,
+        context: context
+      })
+      return response;
+    }
+    catch (e: any) {
+      this.logger.error(`@AskBot#onAskCommand\n${e.message}\n${e.stack}`);
+      return 'An error occurred while processing the question';
+    }
   }
 }

@@ -21,7 +21,12 @@ export class HistoryLoader extends LobbyPlugin {
   }
 
   private async initializeAsync(): Promise<void> {
-    await WebApiClient.updateToken();
+    try{
+      await WebApiClient.updateToken();
+    }
+    catch (e: any) {
+      this.logger.error(`@HistoryLoader#initializeAsync\n${e.message}\n${e.stack}`);
+    }
   }
 
   private registerEvents(): void {

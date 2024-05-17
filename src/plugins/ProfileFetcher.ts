@@ -27,7 +27,12 @@ export class ProfileFetcher extends LobbyPlugin {
   }
 
   private async initializeAsync(): Promise<void> {
-    await WebApiClient.updateToken();
+    try{
+      await WebApiClient.updateToken();
+    }
+    catch (e: any) {
+      this.logger.error(`@ProfileFetcher#initializeAsync\n${e.message}\n${e.stack}`);
+    }
   }
 
   private registerEvents(): void {
