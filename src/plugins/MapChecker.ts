@@ -28,6 +28,7 @@ export type MapCheckerUncheckedOption =
 
 export class MapChecker extends LobbyPlugin {
   option: MapCheckerOption;
+  oldMapId: number = 0;
   lastMapId: number = 0;
   checkingMapId: number = 0;
   numViolations: number = 0;
@@ -84,6 +85,11 @@ export class MapChecker extends LobbyPlugin {
         case BanchoResponseType.MatchStarted:
           this.onMatchStarted();
           break;
+        case BanchoResponseType.MatchFinished:
+          if(this.option.enabled){
+            this.lobby.isValidMap = false;
+          }
+          break;
       }
     });
   }
@@ -98,6 +104,7 @@ export class MapChecker extends LobbyPlugin {
     if (this.checkingMapId) {
       this.lastMapId = this.checkingMapId;
     }
+    this.oldMapId=this.lobby.mapId;
     if (this.option.enabled) {
       if (!this.lobby.isValidMap){
         this.lobby.SendMessage(`!mp abort\nThe match was aborted because map didn't get validated or previous map was repicked! Please change the map`)
@@ -307,7 +314,13 @@ export class MapChecker extends LobbyPlugin {
   }
 
   private async check(mapId: number, mapTitle: string): Promise<void> {
-    if (mapId === this.lastMapId && this.activeMods == '') return;
+    if (mapId === this.oldMapId){
+      // this.lobby.SendMessage(`!mp map ${this.lastMapId} | You cannot pick the previous map again! Please pick another map.`);
+      // if(this.lastMapId != this.oldMapId)
+      //   this.lobby.isValidMap = true;
+      this.rejectMap(`You cannot pick the previous map again! Please pick another map.`, false);
+      return;
+    }
     try {
       const map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
       this.lobby.maxCombo = map.max_combo;
@@ -375,8 +388,11 @@ export class MapChecker extends LobbyPlugin {
     } else {
       this.lobby.SendMessage(`!mp map ${this.lastMapId} ${this.option.gamemode.value} | ${reason}`);
     }
+    if(this.lastMapId != this.oldMapId)
+      this.lobby.isValidMap = true;
 
     this.checkingMapId = 0;
+    
 
     if (this.option.num_violations_allowed !== 0 && this.option.num_violations_allowed <= this.numViolations) {
       this.skipHost();
