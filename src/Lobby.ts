@@ -38,6 +38,7 @@ export class Lobby {
   ircClient: IIrcClient;
   lobbyName: string | undefined;
   fixedTitle: string | undefined;
+  rejectedWrongLang: boolean = false;
   lobbyId: string | undefined;
   channel: string | undefined;
   status: LobbyStatus;
@@ -596,6 +597,7 @@ export class Lobby {
 
   RaisePlayerJoined(username: string, slot: number, team: Teams, asHost: boolean = false): void {
     const player = this.GetOrMakePlayer(username);
+    player.overrides=0;
     if (this.addPlayer(player, slot, team)) {
       this.PlayerJoined.emit({ player, slot, team, fromMpSettings: false });
     } else {

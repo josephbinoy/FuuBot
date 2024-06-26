@@ -28,13 +28,14 @@ export type MapCheckerUncheckedOption =
 
 export class MapChecker extends LobbyPlugin {
   option: MapCheckerOption;
+  rejectedMapId: number = 0;
   oldMapId: number = 0;
   lastMapId: number = 0;
   checkingMapId: number = 0;
   numViolations: number = 0;
   validator: MapValidator;
   override: boolean = false;
-  maxOverrides: number = 3;
+  maxOverrides: number = 5;
   activeMods: string=''
   modAcronym: Record<string, string>= {
     'Easy': 'EZ',
@@ -85,9 +86,16 @@ export class MapChecker extends LobbyPlugin {
         case BanchoResponseType.MatchStarted:
           this.onMatchStarted();
           break;
+        case BanchoResponseType.AbortedMatch:
+          if(this.option.enabled){
+            this.lobby.isValidMap = false;
+            this.lobby.rejectedWrongLang = false;
+          }
+          break;
         case BanchoResponseType.MatchFinished:
           if(this.option.enabled){
             this.lobby.isValidMap = false;
+            this.lobby.rejectedWrongLang = false;
           }
           break;
       }
@@ -202,7 +210,13 @@ export class MapChecker extends LobbyPlugin {
       if(player.overrides < this.maxOverrides){
         this.override = true;
         player.overrides++;
-        this.lobby.SendMessage('Go ahead and pick your map! Type !info for help.');
+        if(this.lobby.rejectedWrongLang){
+          this.lobby.SendMessage(`!mp map ${this.rejectedMapId} ${this.option.gamemode.value} | Force picking current map...`);
+          this.lobby.rejectedWrongLang = false;
+        }
+        else{
+          this.lobby.SendMessage('Go ahead and pick your map! Type !info for help.');
+        }
       }
       else
         this.lobby.SendMessage(`Sorry! You have forced too many maps this session. (Maximum ${this.maxOverrides})`);
@@ -337,8 +351,14 @@ export class MapChecker extends LobbyPlugin {
       }
       const r = this.validator.RateBeatmap(map, this.override, newStarRating);
       if (r.rate > 0) {
-        if(r.rate === 69)
+        if(r.rate === 69){
           this.rejectMap(r.message, false);
+          this.lobby.rejectedWrongLang = false;
+        }
+        else if(r.rate === 420){
+          this.rejectMap(r.message, false);
+          this.lobby.rejectedWrongLang = true;
+        }
         else
           this.rejectMap(r.message, true);
       } 
@@ -391,8 +411,8 @@ export class MapChecker extends LobbyPlugin {
     if(this.lastMapId != this.oldMapId)
       this.lobby.isValidMap = true;
 
+    this.rejectedMapId = this.checkingMapId;
     this.checkingMapId = 0;
-    
 
     if (this.option.num_violations_allowed !== 0 && this.option.num_violations_allowed <= this.numViolations) {
       this.skipHost();
@@ -410,6 +430,8 @@ export class MapChecker extends LobbyPlugin {
     this.lobby.isValidMap = true;
     this.lastMapId = this.lobby.mapId;
     this.override=false;
+    this.lobby.rejectedWrongLang = false;
+    this.rejectedMapId = 0;
   }
 
   private getMapDescription(map: BeatmapCache, set: Beatmapset) {
@@ -519,13 +541,15 @@ export class MapValidator {
 
     else if(!override && map.beatmapset?.language?.name === 'Unspecified'){
       if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
-        rate=69;
+        rate=420;
         violationMsg=`map language couldn't be determined (missing metadata) \nType !force to pick the map anyway`;
+        this.lobbyInstance.rejectedWrongLang = true;
       }
     }
     else if(!override && map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental'){
-        rate=69;
+        rate=420;
         violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\n Type !force to pick the map anyway';
+        this.lobbyInstance.rejectedWrongLang = true;
     }
     if (rate > 0) {
       let message;
