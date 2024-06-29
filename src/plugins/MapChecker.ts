@@ -28,7 +28,7 @@ export type MapCheckerUncheckedOption =
 
 export class MapChecker extends LobbyPlugin {
   option: MapCheckerOption;
-  rejectedMapId: number = 0;
+  rejectedMap: BeatmapCache | undefined;
   oldMapId: number = 0;
   lastMapId: number = 0;
   checkingMapId: number = 0;
@@ -208,13 +208,14 @@ export class MapChecker extends LobbyPlugin {
     }
     if(command === '!force' && player.isHost) {
       if(player.overrides < this.maxOverrides){
-        this.override = true;
         player.overrides++;
         if(this.lobby.rejectedWrongLang){
-          this.lobby.SendMessage(`!mp map ${this.rejectedMapId} ${this.option.gamemode.value} | Force picking current map...`);
+          this.lobby.SendMessage('Forcing previous map...');
+          this.forceMap();
           this.lobby.rejectedWrongLang = false;
         }
         else{
+          this.override = true;
           this.lobby.SendMessage('Go ahead and pick your map! Type !info for help.');
         }
       }
@@ -358,6 +359,7 @@ export class MapChecker extends LobbyPlugin {
         else if(r.rate === 420){
           this.rejectMap(r.message, false);
           this.lobby.rejectedWrongLang = true;
+          this.rejectedMap = map;
         }
         else
           this.rejectMap(r.message, true);
@@ -411,11 +413,29 @@ export class MapChecker extends LobbyPlugin {
     if(this.lastMapId != this.oldMapId)
       this.lobby.isValidMap = true;
 
-    this.rejectedMapId = this.checkingMapId;
     this.checkingMapId = 0;
 
     if (this.option.num_violations_allowed !== 0 && this.option.num_violations_allowed <= this.numViolations) {
       this.skipHost();
+    }
+  }
+
+  private forceMap(): void {
+    if(this.rejectedMap){
+      if (this.rejectedMap.beatmapset) {
+        const desc = this.getMapDescription(this.rejectedMap, this.rejectedMap.beatmapset);
+        this.lobby.SendMessage(`!mp map ${this.rejectedMap.id} ${this.option.gamemode.value} | ${desc}`);
+      } else {
+        this.lobby.SendMessage(`!mp map ${this.rejectedMap.id} ${this.option.gamemode.value}`);
+      }
+      this.SendPluginMessage('validatedMap');
+      this.lobby.isValidMap = true;
+      this.lastMapId = this.lobby.mapId;
+      this.override=false;
+      this.lobby.rejectedWrongLang = false;
+    }
+    else{
+      this.lobby.SendMessage('There was an error while trying to force the map. Please try again.');
     }
   }
 
@@ -431,7 +451,6 @@ export class MapChecker extends LobbyPlugin {
     this.lastMapId = this.lobby.mapId;
     this.override=false;
     this.lobby.rejectedWrongLang = false;
-    this.rejectedMapId = 0;
   }
 
   private getMapDescription(map: BeatmapCache, set: Beatmapset) {
