@@ -37,7 +37,6 @@ export class Lobby {
   option: LobbyOption;
   ircClient: IIrcClient;
   lobbyName: string | undefined;
-  fixedTitle: string | undefined;
   rejectedWrongLang: boolean = false;
   lobbyId: string | undefined;
   channel: string | undefined;
@@ -303,10 +302,8 @@ export class Lobby {
     this.transferHostTimeout.start(this.option.transferhost_timeout_ms);
     if (user.id !== 0) {
       this.SendMessage(`!mp host #${user.id}`);
-      this.SendMessage(`!mp size 8`);
     } else {
       this.SendMessage(`!mp host ${user.name}`);
-      this.SendMessage(`!mp size 8`);
     }
   }
 
@@ -757,7 +754,6 @@ export class Lobby {
     return new Promise<string>((resolve, reject) => {
       this.JoinedLobby.once(a => {
         this.lobbyName = title;
-        this.fixedTitle = title;
         this.logger.trace('Finished making a lobby.');
         if (this.lobbyId) {
           resolve(this.lobbyId);
@@ -785,7 +781,6 @@ export class Lobby {
       const joinhandler = () => {
         this.ircClient.off('error', errhandler);
         this.lobbyName = '__';
-        this.fixedTitle='__';
         this.logger.trace('Successfully entered the lobby.');
         if (this.lobbyId) {
           resolve(this.lobbyId);
