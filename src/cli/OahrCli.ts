@@ -4,6 +4,8 @@ import { LobbyStatus } from '../Lobby';
 import { getLogger } from '../Loggers';
 import { parser } from '../parsers/CommandParser';
 import { OahrBase } from './OahrBase';
+import { LobbyKeeperOption, } from '../plugins/LobbyKeeper';
+import { ConfigTypeHint, getConfig } from '../TypedConfig';
 
 const logger = getLogger('cli');
 
@@ -36,12 +38,23 @@ interface Scene {
   completer: readline.Completer
 }
 
+const OPTION_TYPE_HINTS: ConfigTypeHint[] = [
+  { key: 'mode', nullable: true, type: 'string' },
+  { key: 'size', nullable: true, type: 'number' },
+  { key: 'password', nullable: true, type: 'string' },
+  { key: 'mods', nullable: true, type: 'string' },
+  { key: 'hostkick_tolerance', nullable: false, type: 'number' },
+  { key: 'title', nullable: true, type: 'string' },
+];
+
 export class OahrCli extends OahrBase {
   private scene: Scene;
+  private lobbyopts: LobbyKeeperOption;
 
-  constructor(client: IIrcClient) {
+  constructor(client: IIrcClient, option: Partial<LobbyKeeperOption> = {}) {
     super(client);
     this.scene = this.scenes.mainMenu;
+    this.lobbyopts = getConfig('LobbyKeeper', option, OPTION_TYPE_HINTS) as LobbyKeeperOption;
   }
 
   private scenes = {
@@ -54,8 +67,13 @@ export class OahrCli extends OahrBase {
           case 'm':
           case 'make':
             if (l.arg === '') {
-              logger.info('Make command needs a lobby name, e.g., \'make testlobby\'');
-              return;
+              if(this.lobbyopts.title){
+                l.arg = this.lobbyopts.title;
+              }
+              else{
+                logger.info('Make command needs a lobby name, e.g., \'make testlobby\'');
+                return;
+              }
             }
             try {
               await this.makeLobbyAsync(l.arg);
