@@ -282,6 +282,7 @@ export class LobbyKeeper extends LobbyPlugin {
     }
     if(this.lobby.players.size === 0){
       this.lobby.SendMessageWithCoolTime('!mp settings', 'title_check', 5000);
+      this.fixLobbyModeAndSize();
     }
   }
 
