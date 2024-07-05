@@ -112,6 +112,7 @@ export class MapChecker extends LobbyPlugin {
     if (this.checkingMapId) {
       this.lastMapId = this.checkingMapId;
     }
+    this.override=false;
     this.oldMapId=this.lobby.mapId;
     if (this.option.enabled) {
       if (!this.lobby.isValidMap){
@@ -419,7 +420,6 @@ export class MapChecker extends LobbyPlugin {
       this.SendPluginMessage('validatedMap');
       this.lobby.isValidMap = true;
       this.lastMapId = this.lobby.mapId;
-      this.override=false;
       this.lobby.rejectedWrongLang = false;
     }
     else{
@@ -437,7 +437,6 @@ export class MapChecker extends LobbyPlugin {
     this.SendPluginMessage('validatedMap');
     this.lobby.isValidMap = true;
     this.lastMapId = this.lobby.mapId;
-    this.override=false;
     this.lobby.rejectedWrongLang = false;
   }
 
