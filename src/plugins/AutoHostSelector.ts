@@ -62,6 +62,7 @@ export class AutoHostSelector extends LobbyPlugin {
   mapChanger: Player | null = null;
   orderChanged = new TypedEvent<{ type: OrderChangeType }>();
   eventDisposers: Disposable[] = [];
+  host_aborted: boolean = false;
 
   constructor(lobby: Lobby, option: Partial<AutoHostSelectorOption> = {}) {
     super(lobby, 'AutoHostSelector', 'selector');
@@ -175,8 +176,16 @@ export class AutoHostSelector extends LobbyPlugin {
     if (this.hostQueue[0] !== this.lobby.host) {
       // アボートで中断後にマップ変更しようとした場合は次のホストに変更
       this.logger.info('A host changed the beatmap after aborting the match.');
-      this.changeHost();
-      this.needsRotate = false;
+      if(this.host_aborted){
+        this.changeHost();
+        this.needsRotate = false;
+        this.host_aborted = false;
+      }
+      else{
+        if (this.lobby.host) {
+          this.SkipTo(this.lobby.host);
+        } 
+      }
     } else {
       // マップを変更した
       this.needsRotate = true;
@@ -200,6 +209,7 @@ export class AutoHostSelector extends LobbyPlugin {
    */
   private onMatchFinished(): void {
     this.needsRotate = true;
+    this.host_aborted = false;
     this.mapChanger = null;
     this.changeHost();
     if (this.option.show_host_order_after_every_match) {
@@ -323,6 +333,8 @@ export class AutoHostSelector extends LobbyPlugin {
     } else if (type === 'reorder') {
       this.logger.trace('Received a plugin message: reorder');
       this.Reorder(args[0]);
+    } else if (type === 'host_abort'){
+        this.host_aborted = true;
     }
   }
 

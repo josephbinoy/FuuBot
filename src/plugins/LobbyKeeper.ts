@@ -276,8 +276,12 @@ export class LobbyKeeper extends LobbyPlugin {
     }
   }
 
-  private onPlayerLeft(player: Player, slot: number) {
+  private async onPlayerLeft(player: Player, slot: number) {
     if (this.slotKeeper.checkLeave(slot)) {
+      this.fixLobbyModeAndSize();
+    }
+    if(this.lobby.players.size === 0){
+      this.lobby.SendMessageWithCoolTime('!mp settings', 'title_check', 5000);
       this.fixLobbyModeAndSize();
     }
   }

@@ -12,7 +12,7 @@ import { WebApiClient } from '../webapi/WebApiClient';
 export class MiscLoader extends LobbyPlugin {
   canResend: boolean = true;
   beatconnectURL: string = 'https://beatconnect.io/b/${beatmapset_id}';
-  kitsuURL: string = 'https://kitsu.moe/d/${beatmapset_id}';
+  nerinyanURL: string = 'https://api.nerinyan.moe/d/${beatmapset_id}';
   canSeeRank: boolean = false;
 
   constructor(lobby: Lobby) {
@@ -51,9 +51,9 @@ export class MiscLoader extends LobbyPlugin {
       }
       this.canResend = true;
       const beatconnectLink = this.beatconnectURL.replace(/\$\{beatmapset_id\}/g, map.beatmapset_id.toString());
-      const kitsuLink = this.kitsuURL.replace(/\$\{beatmapset_id\}/g, map.beatmapset_id.toString());
+      const nerinyanLink = this.nerinyanURL.replace(/\$\{beatmapset_id\}/g, map.beatmapset_id.toString());
       const beatmapView = map.beatmapset?.title.toString();
-      this.lobby.SendMessageWithCoolTime(`Alternative download link for beatmap ${beatmapView}: [${beatconnectLink} BeatConnect.io] | [${kitsuLink} Kitsu.moe]`, '!mirror', 5000);
+      this.lobby.SendMessageWithCoolTime(`Alternative download link for beatmap ${beatmapView}: [${beatconnectLink} BeatConnect.io] | [${nerinyanLink} NeriNyan.moe]`, '!mirror', 5000);
     } catch (e: any) {
       this.canResend = false;
       if (e instanceof FetchBeatmapError) {

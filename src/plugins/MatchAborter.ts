@@ -75,6 +75,7 @@ export class MatchAborter extends LobbyPlugin {
     if (command === '!abort') {
       if (player === this.lobby.host) {
         this.logger.trace(`The host (Player ${player.name}) sent !abort command.`);
+        this.SendPluginMessage('host_abort');
         this.doAbort();
       } else {
         this.vote(player);
