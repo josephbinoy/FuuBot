@@ -61,6 +61,32 @@
   },
   "MapChecker": {
     "enabled": true,
+    "advanced_filters": {
+      "enabled": false,
+      "od": [0,0],
+      "ar": [0,0],
+      "bpm": [0,0],
+      "cs": [0,0],
+      "play_count": [0,0],
+      "stamina_score": 0,
+      "year": [0,0],
+      "languages": [],
+      "genres": [],
+      "statuses": [],
+      "tags": {
+        "allow":[],
+        "deny":[]
+      },
+      "artists": {
+        "allow":[],
+        "deny":[]
+      },
+      "mappers": {
+        "allow":[],
+        "deny":[]
+      },
+      "nsfw": false
+    },
     "star_min": 0,
     "star_max": 0,
     "length_min": 0,
