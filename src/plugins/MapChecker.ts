@@ -670,49 +670,49 @@ export class MapValidator {
     //nsfw
     if(!this.option.advanced_filters.nsfw){
       if (map.beatmapset?.nsfw)
-        return "NSFW maps are not allowed in the lobby";
+        return "NSFW maps are not allowed in the lobby\nType !force to pick the map anyway";
     }
 
     //od
     if(this.option.advanced_filters.od[1]){
       if (map.accuracy < this.option.advanced_filters.od[0])
-        return "the beatmap OD is lower than the allowed OD";
+        return "the beatmap OD is lower than the allowed OD\nType !force to pick the map anyway";
       if (map.accuracy > this.option.advanced_filters.od[1])
-        return "the beatmap OD is higher than the allowed OD";
+        return "the beatmap OD is higher than the allowed OD\nType !force to pick the map anyway";
     }
     //ar
     if(this.option.advanced_filters.ar[1]){
       if (map.ar < this.option.advanced_filters.ar[0])
-        return "the beatmap AR is lower than the allowed AR";
+        return "the beatmap AR is lower than the allowed AR\nType !force to pick the map anyway";
       if (map.ar > this.option.advanced_filters.ar[1])
-        return "the beatmap AR is higher than the allowed AR";
+        return "the beatmap AR is higher than the allowed AR\nType !force to pick the map anyway";
     }
     //bpm
     if(this.option.advanced_filters.bpm[1]){
       if (map.bpm < this.option.advanced_filters.bpm[0])
-        return "the beatmap BPM is lower than the allowed BPM";
+        return "the beatmap BPM is lower than the allowed BPM\nType !force to pick the map anyway";
       if (map.bpm > this.option.advanced_filters.bpm[1])
-        return "the beatmap BPM is higher than the allowed BPM";
+        return "the beatmap BPM is higher than the allowed BPM\nType !force to pick the map anyway";
     }
     //cs
     if(this.option.advanced_filters.cs[1]){
       if (map.cs < this.option.advanced_filters.cs[0])
-        return "the beatmap CS is lower than the allowed CS";
+        return "the beatmap CS is lower than the allowed CS\nType !force to pick the map anyway";
       if (map.cs > this.option.advanced_filters.cs[1])
-        return "the beatmap CS is higher than the allowed CS";
+        return "the beatmap CS is higher than the allowed CS\nType !force to pick the map anyway";
     }
     //playcount
     if(this.option.advanced_filters.play_count[1]){
       if (map.playcount < this.option.advanced_filters.play_count[0])
-        return "the beatmap has too few plays";
+        return "the beatmap has too few plays\nType !force to pick the map anyway";
       if (map.playcount > this.option.advanced_filters.play_count[1])
-        return "the beatmap has too many plays";
+        return "the beatmap has too many plays\nType !force to pick the map anyway";
     }
     //stamina_score
     if(this.option.advanced_filters.stamina_score){
       let stamina=(map.count_circles+map.count_sliders+map.count_spinners)/map.hit_length;
       if (stamina > this.option.advanced_filters.stamina_score)
-        return "the beatmap is too stamina draining";
+        return `the beatmap is too stamina draining (${stamina.toFixed(2)} circles per second)\nType !force to pick the map anyway`;
     }
     //year
     if(this.option.advanced_filters.year[1]){
@@ -723,9 +723,9 @@ export class MapValidator {
         year = date.getFullYear();
       }
       if (year < this.option.advanced_filters.year[0])
-        return "the beatmap is too old";
+        return "the beatmap is too old\nType !force to pick the map anyway";
       if (year> this.option.advanced_filters.year[1])
-        return "the beatmap is too new";
+        return "the beatmap is too new\nType !force to pick the map anyway";
     }
     //language
     if(this.option.advanced_filters.languages.length>0){
@@ -734,15 +734,15 @@ export class MapValidator {
       if(map.beatmapset?.language?.name === 'Unspecified'){
         if(langs.includes('Japanese')){
           if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
-            return "beatmap language couldn't be determined (missing metadata)";
+            return "beatmap language couldn't be determined (missing metadata)\nType !force to pick the map anyway";
           }
         }
         else{
-          return "beatmap language couldn't be determined (missing metadata)";
+          return "beatmap language couldn't be determined (missing metadata)\nType !force to pick the map anyway";
         }
       }
       else if (map.beatmapset?.language?.name && !this.option.advanced_filters.languages.includes(map.beatmapset?.language?.name)){
-        return `only ${allowedLangs} maps are allowed in the lobby`;
+        return `only ${allowedLangs} maps are allowed in the lobby\nType !force to pick the map anyway`;
       }
     }
 
@@ -751,10 +751,10 @@ export class MapValidator {
       let genres = this.option.advanced_filters.genres;
       let allowedGenres = genres.join(', ');
       if(map.beatmapset?.genre?.name === 'Unspecified'){
-        return "beatmap genre couldn't be determined (missing metadata)";
+        return "beatmap genre couldn't be determined (missing metadata)\nType !force to pick the map anyway";
       }
       if (map.beatmapset?.genre?.name && !this.option.advanced_filters.genres.includes(map.beatmapset?.genre?.name)){
-        return `only ${allowedGenres} maps are allowed in the lobby`;
+        return `only ${allowedGenres} maps are allowed in the lobby\nType !force to pick the map anyway`;
       }
     }
 
@@ -763,7 +763,7 @@ export class MapValidator {
       let statuses = this.option.advanced_filters.statuses;
       let allowedStatuses = statuses.join(', ');
       if (map.beatmapset?.status && !this.option.advanced_filters.statuses.includes(map.beatmapset?.status)){
-        return `only ${allowedStatuses} maps are allowed in the lobby`;
+        return `only ${allowedStatuses} maps are allowed in the lobby\nType !force to pick the map anyway`;
       }
     }
 
@@ -773,11 +773,11 @@ export class MapValidator {
         let tags = this.option.advanced_filters.tags.allow.map(tag => tag.toLowerCase());
         let words = map.beatmapset?.tags.split(' ');
         if(!words.some(word => tags.includes(word.toLowerCase()))){
-          return `beatmap with such tags are not allowed in the lobby`;
+          return `beatmap with such tags are not allowed in the lobby\nType !force to pick the map anyway`;
         }
       }
       else{
-        return "beatmap tags couldn't be determined (missing metadata)";
+        return "beatmap tags couldn't be determined (missing metadata)\nType !force to pick the map anyway";
       }
     }
 
@@ -788,7 +788,7 @@ export class MapValidator {
         let allowedMappers = this.option.advanced_filters.mappers.allow.join(', ');
         let mapperLower=map.beatmapset?.creator?.toLowerCase();
         if (!mappers.includes(mapperLower)){
-          return `only ${allowedMappers} maps are allowed in the lobby`;
+          return `only ${allowedMappers} maps are allowed in the lobby\nType !force to pick the map anyway`;
         }
     }
     }
@@ -800,7 +800,7 @@ export class MapValidator {
         let artists = this.option.advanced_filters.artists.allow;
         let allowedArtists = artists.join(', ');
         if (!artists.some(artist => mapArtists.includes(artist.toLowerCase()))){
-          return `only ${allowedArtists} maps are allowed in the lobby`;
+          return `only ${allowedArtists} maps are allowed in the lobby\nType !force to pick the map anyway`;
         }
       }
     }
