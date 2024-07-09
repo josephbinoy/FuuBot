@@ -658,7 +658,7 @@ export class MapValidator {
           let artistLower = map.beatmapset?.artist.toLowerCase();
           let artists = this.option.advanced_filters.artists.deny;
           if (artists.some(artist => artistLower.includes(artist.toLowerCase()))){
-            return `songs by this artist are allowed in the lobby`;
+            return `songs by this artist are not allowed in the lobby`;
           }
         }
       }
