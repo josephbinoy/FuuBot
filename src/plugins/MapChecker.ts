@@ -750,7 +750,7 @@ export class MapValidator {
     if(this.option.advanced_filters.genres.length>0){
       let genres = this.option.advanced_filters.genres;
       let allowedGenres = genres.join(', ');
-      if(map.beatmapset?.language?.name === 'Unspecified'){
+      if(map.beatmapset?.genre?.name === 'Unspecified'){
         return "beatmap genre couldn't be determined (missing metadata)";
       }
       if (map.beatmapset?.genre?.name && !this.option.advanced_filters.genres.includes(map.beatmapset?.genre?.name)){
