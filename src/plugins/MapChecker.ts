@@ -13,6 +13,32 @@ import fs from 'fs';
 
 export type MapCheckerOption = {
   enabled: boolean;
+  advanced_filters: {
+      "enabled": boolean,
+      "od": [number, number],
+      "ar": [number, number],
+      "bpm": [number, number],
+      "cs": [number, number],
+      "play_count": [number, number],
+      "stamina_score": number,
+      "year": [number, number],
+      "languages": string[],
+      "genres": string[],
+      "statuses": string[],
+      "tags": {
+        "allow": string[],
+        "deny": string[]
+      }
+      "artists": {
+        "allow": string[],
+        "deny": string[]
+      }
+      "mappers": {
+        "allow": string[],
+        "deny": string[]
+      }
+      "nsfw": boolean
+  };
   num_violations_allowed: number; // Number of times violations are allowed
   star_min: number;
   star_max: number;
@@ -466,16 +492,22 @@ export class MapValidator {
   logger: Logger;
   option: MapCheckerOption;
   overplayedIDs: number[]=[];
-  overplayedJP: string[]=[];
-  overplayedOverall: string[]=[];
+  overplayedNames: string[]=[];
+  blacklistedIDs: number[]=[];
+  blacklistedNames: string[]=[];
   lobbyInstance: Lobby;
+  //TODO: Create own type for languages and genres!!
+  // languages: string[] = ['English', 'Chinese', 'French', 'German', 'Italian', 'Japanese', 'Korean', 'Spanish', 'Swedish', 'Russian', 'Polish', 'Instrumental', 'Unspecified', 'Other'];
+  // genres: string[] = ['Unspecified', 'Video Game', 'Anime', 'Rock', 'Pop', 'Other', 'Novelty', 'Hip Hop', 'Electronic', 'Metal', 'Classical', 'Folk', 'Jazz'];
+  // statuses: string[] = ['ranked', 'approved', 'qualified', 'loved', 'unranked', 'pending', 'wip', 'graveyard'];
 
   constructor(option: MapCheckerOption, logger: Logger, lobbyInstance: Lobby) {
     this.option = option;
     this.logger = logger;
-    this.overplayedIDs = this.LoadFilters('./filters/overplayed_id.txt').map(Number);
-    this.overplayedJP = this.LoadFilters('./filters/overplayed_jp.txt');
-    this.overplayedOverall = this.LoadFilters('./filters/overplayed.txt');
+    this.overplayedIDs = this.LoadFilters('./filters/overplayed_ids.txt').map(Number);
+    this.overplayedNames = this.LoadFilters('./filters/overplayed_names.txt');
+    this.blacklistedIDs = this.LoadFilters('./filters/blacklisted_ids.txt').map(Number);
+    this.blacklistedNames = this.LoadFilters('./filters/blacklisted_names.txt');
     this.lobbyInstance = lobbyInstance;
   }
 
@@ -492,6 +524,7 @@ export class MapValidator {
 
   RateBeatmap(map: Beatmap, override: boolean, newStarRating: number): { rate: number, message: string }{
     let rate = 0;
+    let result = "";
     let violationMsg = "";
     let starRating = map.difficulty_rating;
     let modsOn = false;
@@ -535,28 +568,26 @@ export class MapValidator {
       violationMsg='the beatmap length is longer than the allowed length.';
     }
 
-    else if(this.overplayedIDs.includes(map.beatmapset_id) || this.overplayedJP.includes(map.beatmapset?.title || '')){
+    else if(this.option.advanced_filters.enabled && (result = this.checkBlackList(map)) !== ""){
+      rate = 69;
+      violationMsg = result;
+    }
+
+    else if(this.overplayedIDs.includes(map.beatmapset_id) || this.overplayedNames.includes(map.beatmapset?.title || '')){
       rate=69;
       violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map.';
     }
-
-    else if(override && this.overplayedOverall.includes(map.beatmapset?.title || '')){
+    
+    else if(this.blacklistedIDs.includes(map.beatmapset_id) || this.blacklistedNames.includes(map.beatmapset?.title || '')){
       rate=69;
-      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map.';
+      violationMsg='it is not blocked in the lobby. Please pick another map.';
     }
 
-    else if(!override && map.beatmapset?.language?.name === 'Unspecified'){
-      if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
+    else if(!override && this.option.advanced_filters.enabled && (result = this.advancedFiltering(map)) !== ""){
         rate=420;
-        violationMsg=`map language couldn't be determined (missing metadata) \nType !force to pick the map anyway`;
-        this.lobbyInstance.rejectedWrongLang = true;
-      }
+        violationMsg=result;
     }
-    else if(!override && map.beatmapset?.language?.name !== 'Japanese' && map.beatmapset?.language?.name !== 'Instrumental'){
-        rate=420;
-        violationMsg='only Japanese and Instrumental maps are allowed in the lobby!\n Type !force to pick the map anyway';
-        this.lobbyInstance.rejectedWrongLang = true;
-    }
+
     if (rate > 0) {
       let message;
       const mapDesc = `[${map.url} ${map.beatmapset?.title}] (Star rating: ${starRating}, Length: ${secToTimeNotation(map.total_length)})`;
@@ -599,8 +630,181 @@ export class MapValidator {
     return [d_star, d_length, d_gamemode].filter(d => d !== '').join(', ');
   }
 
-  IsOverplayed(name: string, id: number): boolean {
-    return this.overplayedIDs.includes(id) || this.overplayedJP.includes(name);
+  checkBlackList(map: Beatmap): string {
+      //blacklists
+      if(this.option.advanced_filters.tags.deny.length>0){
+        if (map.beatmapset?.tags) {
+          let words = map.beatmapset.tags.split(' ');
+          let denyTags = this.option.advanced_filters.tags.deny.map(tag => tag.toLowerCase());
+          if(words.some(word => denyTags.includes(word.toLowerCase()))){
+            const bannedWord = words.find(word => denyTags.includes(word.toLowerCase()));
+            return `${bannedWord} maps are not allowed in the lobby`;
+          }
+        }
+      }
+  
+      if(this.option.advanced_filters.mappers.deny.length>0){
+        if (map.beatmapset?.creator) {
+          let mappers = this.option.advanced_filters.mappers.deny.map(mapper => mapper.toLowerCase());
+          let mapperLower=map.beatmapset?.creator.toLowerCase();
+          if (mappers.includes(mapperLower)){
+            return `beatmaps by this mapper are not allowed in the lobby`;
+          }
+        }
+      }
+  
+      if(this.option.advanced_filters.artists.deny.length>0){
+        if(map.beatmapset?.artist){
+          let artistLower = map.beatmapset?.artist.toLowerCase();
+          let artists = this.option.advanced_filters.artists.deny;
+          if (artists.some(artist => artistLower.includes(artist.toLowerCase()))){
+            return `songs by this artist are allowed in the lobby`;
+          }
+        }
+      }
+      return "";
+  }
+
+  advancedFiltering(map: Beatmap): string {
+
+    //nsfw
+    if(!this.option.advanced_filters.nsfw){
+      if (map.beatmapset?.nsfw)
+        return "NSFW maps are not allowed in the lobby";
+    }
+
+    //od
+    if(this.option.advanced_filters.od[1]){
+      if (map.accuracy < this.option.advanced_filters.od[0])
+        return "the beatmap OD is lower than the allowed OD";
+      if (map.accuracy > this.option.advanced_filters.od[1])
+        return "the beatmap OD is higher than the allowed OD";
+    }
+    //ar
+    if(this.option.advanced_filters.ar[1]){
+      if (map.ar < this.option.advanced_filters.ar[0])
+        return "the beatmap AR is lower than the allowed AR";
+      if (map.ar > this.option.advanced_filters.ar[1])
+        return "the beatmap AR is higher than the allowed AR";
+    }
+    //bpm
+    if(this.option.advanced_filters.bpm[1]){
+      if (map.bpm < this.option.advanced_filters.bpm[0])
+        return "the beatmap BPM is lower than the allowed BPM";
+      if (map.bpm > this.option.advanced_filters.bpm[1])
+        return "the beatmap BPM is higher than the allowed BPM";
+    }
+    //cs
+    if(this.option.advanced_filters.cs[1]){
+      if (map.cs < this.option.advanced_filters.cs[0])
+        return "the beatmap CS is lower than the allowed CS";
+      if (map.cs > this.option.advanced_filters.cs[1])
+        return "the beatmap CS is higher than the allowed CS";
+    }
+    //playcount
+    if(this.option.advanced_filters.play_count[1]){
+      if (map.playcount < this.option.advanced_filters.play_count[0])
+        return "the beatmap has too few plays";
+      if (map.playcount > this.option.advanced_filters.play_count[1])
+        return "the beatmap has too many plays";
+    }
+    //stamina_score
+    if(this.option.advanced_filters.stamina_score){
+      let stamina=(map.count_circles+map.count_sliders+map.count_spinners)/map.hit_length;
+      if (stamina > this.option.advanced_filters.stamina_score)
+        return "the beatmap is too stamina draining";
+    }
+    //year
+    if(this.option.advanced_filters.year[1]){
+      let dateString = map.beatmapset?.submitted_date;
+      let year = 0;
+      if (dateString) {
+        let date = new Date(dateString);
+        year = date.getFullYear();
+      }
+      if (year < this.option.advanced_filters.year[0])
+        return "the beatmap is too old";
+      if (year> this.option.advanced_filters.year[1])
+        return "the beatmap is too new";
+    }
+    //language
+    if(this.option.advanced_filters.languages.length>0){
+      let langs = this.option.advanced_filters.languages;
+      let allowedLangs = langs.join(', ');
+      if(map.beatmapset?.language?.name === 'Unspecified'){
+        if(langs.includes('Japanese')){
+          if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
+            return "beatmap language couldn't be determined (missing metadata)";
+          }
+        }
+        else{
+          return "beatmap language couldn't be determined (missing metadata)";
+        }
+      }
+      else if (map.beatmapset?.language?.name && !this.option.advanced_filters.languages.includes(map.beatmapset?.language?.name)){
+        return `only ${allowedLangs} maps are allowed in the lobby`;
+      }
+    }
+
+    //genres
+    if(this.option.advanced_filters.genres.length>0){
+      let genres = this.option.advanced_filters.genres;
+      let allowedGenres = genres.join(', ');
+      if(map.beatmapset?.language?.name === 'Unspecified'){
+        return "beatmap genre couldn't be determined (missing metadata)";
+      }
+      if (map.beatmapset?.genre?.name && !this.option.advanced_filters.genres.includes(map.beatmapset?.genre?.name)){
+        return `only ${allowedGenres} maps are allowed in the lobby`;
+      }
+    }
+
+    //statuses
+    if(this.option.advanced_filters.statuses.length>0){
+      let statuses = this.option.advanced_filters.statuses;
+      let allowedStatuses = statuses.join(', ');
+      if (map.beatmapset?.status && !this.option.advanced_filters.statuses.includes(map.beatmapset?.status)){
+        return `only ${allowedStatuses} maps are allowed in the lobby`;
+      }
+    }
+
+    //tags
+    if(this.option.advanced_filters.tags.allow.length>0){
+      if (map.beatmapset?.tags){
+        let tags = this.option.advanced_filters.tags.allow.map(tag => tag.toLowerCase());
+        let words = map.beatmapset?.tags.split(' ');
+        if(!words.some(word => tags.includes(word.toLowerCase()))){
+          return `beatmap with such tags are not allowed in the lobby`;
+        }
+      }
+      else{
+        return "beatmap tags couldn't be determined (missing metadata)";
+      }
+    }
+
+    //mappers
+    if(this.option.advanced_filters.mappers.allow.length>0){
+      if(map.beatmapset?.creator){
+        let mappers = this.option.advanced_filters.mappers.allow.map(mapper => mapper.toLowerCase());
+        let allowedMappers = this.option.advanced_filters.mappers.allow.join(', ');
+        let mapperLower=map.beatmapset?.creator?.toLowerCase();
+        if (!mappers.includes(mapperLower)){
+          return `only ${allowedMappers} maps are allowed in the lobby`;
+        }
+    }
+    }
+
+    //artists
+    if(this.option.advanced_filters.artists.allow.length>0){
+      if(map.beatmapset?.artist){
+        let mapArtists = map.beatmapset?.artist.toLowerCase();
+        let artists = this.option.advanced_filters.artists.allow;
+        let allowedArtists = artists.join(', ');
+        if (!artists.some(artist => mapArtists.includes(artist.toLowerCase()))){
+          return `only ${allowedArtists} maps are allowed in the lobby`;
+        }
+      }
+    }
+    return "";
   }
 }
 
@@ -613,6 +817,7 @@ function checkTags(text: string): boolean {
   const allowedTags=['japanese', 'jpop', 'jrock', 'vn', 'j-pop', 'anime', 'j-rock', 'instrumental'];
   return allowedTags.some(tag => text.includes(tag));
 }
+
 
 function validateMapCheckerOption(option: MapCheckerUncheckedOption): option is Partial<MapCheckerOption> {
   if (option.enabled !== undefined) {
