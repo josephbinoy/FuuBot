@@ -9,6 +9,8 @@ import { LobbyPlugin } from './plugins/LobbyPlugin';
 import { PlayMode } from './Modes';
 import { getConfig } from './TypedConfig';
 import { getLogger, Logger } from './Loggers';
+// import setupDatabase from './db/connect';
+// import { Database } from 'sqlite';
 
 export enum LobbyStatus {
   Standby,
@@ -34,6 +36,7 @@ export interface LobbyOption {
 
 export class Lobby {
   // Members
+  // dbClient: Database | null = null;
   option: LobbyOption;
   ircClient: IIrcClient;
   lobbyName: string | undefined;
@@ -102,8 +105,13 @@ export class Lobby {
     this.logger = getLogger('lobby');
     this.chatlogger = getLogger('chat');
     this.transferHostTimeout = new DeferredAction(() => this.onTimeoutedTransferHost());
+    // this.initializeDB();
     this.registerEvents();
   }
+
+//   private async initializeDB() {
+//     this.dbClient = await setupDatabase();
+// }
 
   private registerEvents(): void {
     this.events = {

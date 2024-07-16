@@ -9,6 +9,8 @@ import { Beatmap, Beatmapset } from '../webapi/Beatmapsets';
 import { getConfig } from '../TypedConfig';
 import { Logger } from '../Loggers';
 import { WebApiClient } from '../webapi/WebApiClient';
+// import { insertPlayer, insertBeatmap } from '../db/helpers';
+import * as modCalc from '../helpers/modCalculator'
 import fs from 'fs';
 
 export type MapCheckerOption = {
@@ -52,9 +54,18 @@ export type MapCheckerOption = {
 export type MapCheckerUncheckedOption =
   { [key in keyof MapCheckerOption]?: any } & { num_violations_to_skip?: any, allowConvert?: any };
 
+export interface FixedAttributes {
+  bpm: number;
+  od: number;
+  ar: number;
+  cs: number;
+  hp: number;
+}
+
 export class MapChecker extends LobbyPlugin {
   option: MapCheckerOption;
   rejectedMap: BeatmapCache | undefined;
+  playingMap: BeatmapCache | undefined;
   oldMapId: number = 0;
   lastMapId: number = 0;
   checkingMapId: number = 0;
@@ -134,6 +145,33 @@ export class MapChecker extends LobbyPlugin {
     }
   }
 
+  private getDate(): string {
+    const date = new Date();
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  }
+
+  // private async addPlayertoDB(player_id: number, player_name: string): Promise<void> {
+  //   try {
+  //     if(this.lobby.dbClient){
+  //       await insertPlayer(this.lobby.dbClient, player_id, player_name);
+  //     }
+  //   } catch (err) {
+  //       this.logger.error('@MapChecker#addPlayertoDB\n' + err);
+  //   }
+  // }
+
+  // private async addBeatmaptoDB(player_id: number): Promise<void> {
+  //   try {
+  //     let dateString: string = this.getDate();
+  //     if(this.lobby.dbClient){
+  //       await insertBeatmap(this.lobby.dbClient, this.lobby.mapId, this.lobby.mapTitle, dateString, player_id);
+  //     }
+  //   } catch (err) {
+  //       this.logger.error('@MapChecker#addBeatmaptoDB\n' + err);
+  //   }
+  // }
+
   private async onMatchStarted() {
     if (this.checkingMapId) {
       this.lastMapId = this.checkingMapId;
@@ -165,30 +203,87 @@ export class MapChecker extends LobbyPlugin {
         }
       }
     }
+    // try{
+    //   let p = this.lobby.host;
+    //   if(p){
+    //     await this.addPlayertoDB(p?.id, p?.name);
+    //     await this.addBeatmaptoDB(p?.id);
+    //   }
+    // } catch (err) {
+    //   this.logger.error('@MapChecker#onMatchStartedDBInsert\n' + err);
+    // }
     this.cancelCheck();
     this.lobby.mapStartTimeMs = Date.now()
+  }
+
+  private getFixedAttributes(map: Beatmap | BeatmapCache | undefined, modList: string[]): FixedAttributes{
+    let new_ar=map?.ar || 0
+    let new_od=map?.accuracy || 0
+    let new_cs=map?.cs || 0
+    let new_bpm=map?.bpm || 0
+    let new_hp=map?.drain || 0
+
+    //calculate for HR or EZ
+    if(modList.includes('HR')){
+      ({cs: new_cs, ar: new_ar, od: new_od,hp: new_hp} = modCalc.toHR(new_cs, new_ar, new_od, new_hp));
+    }
+    else if(modList.includes('EZ')){
+      ({cs: new_cs, ar: new_ar, od: new_od,hp: new_hp} = modCalc.toEZ(new_cs, new_ar, new_od, new_hp));
+    }
+    //calculate for DT or HT
+    if(modList.includes('DT') || modList.includes('NC')){
+      new_ar= modCalc.DoubleTimeAR(new_ar);
+      new_od= modCalc.odDT(new_od);
+      new_bpm=new_bpm*1.5;
+    }
+    else if(modList.includes('HT')){
+      new_ar= modCalc.HalfTimeAR(new_ar);
+      new_od = modCalc.odHT(new_od);
+      new_bpm=new_bpm*0.75;
+    }
+
+    let attr: FixedAttributes = {
+      bpm: new_bpm,
+      od: new_od,
+      ar: new_ar,
+      cs: new_cs,
+      hp: new_hp
+    };
+    return attr;
   }
  
   private async checkForMods() {
     try {
-    let starRating = 0;
-      if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
-        const modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
-        starRating = await WebApiClient.getDifficultyRating(this.checkingMapId, modList);
-        this.activeMods = '';
+      let result=""
+      let starRating = this.playingMap?.difficulty_rating || 0;
+      let attributes: FixedAttributes={
+        bpm: this.playingMap?.bpm || 0,
+        od: this.playingMap?.accuracy || 0,
+        ar: this.playingMap?.ar || 0,
+        cs: this.playingMap?.cs || 0,
+        hp: this.playingMap?.drain || 0
       }
-      if (starRating && this.option.star_min > 0 && starRating < this.option.star_min) {
-        this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map below regulation.');
+        if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
+          let modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
+          attributes = this.getFixedAttributes(this.playingMap, modList);
+          starRating = await WebApiClient.getDifficultyRating(this.checkingMapId, modList);
+          this.activeMods = '';
+        }
+        if (this.option.star_min > 0 && starRating < this.option.star_min) {
+          this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map below regulation.');
+        }
+        else if (this.option.star_max > 0 && this.option.star_max < starRating) {
+          this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation.');
+        }
+        if(this.option.advanced_filters.enabled && (result = this.validator.fixedFiltering(attributes)) !== ""){
+          this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because ${result}`);
+        }
       }
-
-      else if (starRating && this.option.star_max > 0 && this.option.star_max < starRating) {
-        this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation.');
-      }
-    }
     catch (e: any) {
-      this.logger.info(`Failed to get star rating. The match will start without checking star rating`);
+      this.logger.info(`@MapChecker#checkForMods${e.message}`);
     }
   }
+
   private async onBeatmapChanged(mapId: number, mapTitle: string) {
     if (this.option.enabled) {
       this.lobby.isValidMap = false;
@@ -360,12 +455,20 @@ export class MapChecker extends LobbyPlugin {
         return;
       }
       let newStarRating = 0;
+      let attributes: FixedAttributes={
+        bpm: map.bpm,
+        od: map.accuracy,
+        ar: map.ar,
+        cs: map.cs,
+        hp: map.drain
+      }
       if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
         const modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
+        attributes = this.getFixedAttributes(map, modList);
         newStarRating = await WebApiClient.getDifficultyRating(mapId, modList);
         this.activeMods = '';
       }
-      const r = this.validator.RateBeatmap(map, this.override, newStarRating);
+      const r = this.validator.RateBeatmap(map, this.override, newStarRating, attributes);
       if (r.rate > 0) {
         if(r.rate === 69){
           this.rejectMap(r.message, false);
@@ -446,6 +549,7 @@ export class MapChecker extends LobbyPlugin {
       this.SendPluginMessage('validatedMap');
       this.lobby.isValidMap = true;
       this.lastMapId = this.lobby.mapId;
+      this.playingMap = this.rejectedMap;
       this.lobby.rejectedWrongLang = false;
     }
     else{
@@ -463,6 +567,7 @@ export class MapChecker extends LobbyPlugin {
     this.SendPluginMessage('validatedMap');
     this.lobby.isValidMap = true;
     this.lastMapId = this.lobby.mapId;
+    this.playingMap = map;
     this.lobby.rejectedWrongLang = false;
   }
 
@@ -522,7 +627,7 @@ export class MapValidator {
     }
   }
 
-  RateBeatmap(map: Beatmap, override: boolean, newStarRating: number): { rate: number, message: string }{
+  RateBeatmap(map: Beatmap, override: boolean, newStarRating: number, attributes: FixedAttributes): { rate: number, message: string }{
     let rate = 0;
     let result = "";
     let violationMsg = "";
@@ -581,6 +686,11 @@ export class MapValidator {
     else if(this.blacklistedIDs.includes(map.beatmapset_id) || this.blacklistedNames.includes(map.beatmapset?.title || '')){
       rate=69;
       violationMsg='it is not blocked in the lobby. Please pick another map.';
+    }
+
+    else if(this.option.advanced_filters.enabled && (result = this.fixedFiltering(attributes)) !== "" || (result = this.miscFiltering(map)) !== ""){
+      rate=69;
+      violationMsg=result;
     }
 
     else if(!override && this.option.advanced_filters.enabled && (result = this.advancedFiltering(map)) !== ""){
@@ -665,54 +775,51 @@ export class MapValidator {
       return "";
   }
 
-  advancedFiltering(map: Beatmap): string {
-
-    //nsfw
-    if(!this.option.advanced_filters.nsfw){
-      if (map.beatmapset?.nsfw)
-        return "NSFW maps are not allowed in the lobby\nType !force to pick the map anyway";
-    }
-
+  fixedFiltering(attributes: FixedAttributes): string {
     //od
     if(this.option.advanced_filters.od[1]){
-      if (map.accuracy < this.option.advanced_filters.od[0])
-        return "the beatmap OD is lower than the allowed OD\nType !force to pick the map anyway";
-      if (map.accuracy > this.option.advanced_filters.od[1])
-        return "the beatmap OD is higher than the allowed OD\nType !force to pick the map anyway";
+      if (attributes.od < this.option.advanced_filters.od[0])
+        return "the beatmap OD is lower than the allowed OD";
+      if (attributes.od > this.option.advanced_filters.od[1])
+        return "the beatmap OD is higher than the allowed OD";
     }
     //ar
     if(this.option.advanced_filters.ar[1]){
-      if (map.ar < this.option.advanced_filters.ar[0])
-        return "the beatmap AR is lower than the allowed AR\nType !force to pick the map anyway";
-      if (map.ar > this.option.advanced_filters.ar[1])
-        return "the beatmap AR is higher than the allowed AR\nType !force to pick the map anyway";
+      if (attributes.ar < this.option.advanced_filters.ar[0])
+        return "the beatmap AR is lower than the allowed AR";
+      if (attributes.ar > this.option.advanced_filters.ar[1])
+        return "the beatmap AR is higher than the allowed AR";
     }
     //bpm
     if(this.option.advanced_filters.bpm[1]){
-      if (map.bpm < this.option.advanced_filters.bpm[0])
-        return "the beatmap BPM is lower than the allowed BPM\nType !force to pick the map anyway";
-      if (map.bpm > this.option.advanced_filters.bpm[1])
-        return "the beatmap BPM is higher than the allowed BPM\nType !force to pick the map anyway";
+      if (attributes.bpm < this.option.advanced_filters.bpm[0])
+        return "the beatmap BPM is lower than the allowed BPM";
+      if (attributes.bpm > this.option.advanced_filters.bpm[1])
+        return "the beatmap BPM is higher than the allowed BPM";
     }
     //cs
     if(this.option.advanced_filters.cs[1]){
-      if (map.cs < this.option.advanced_filters.cs[0])
-        return "the beatmap CS is lower than the allowed CS\nType !force to pick the map anyway";
-      if (map.cs > this.option.advanced_filters.cs[1])
-        return "the beatmap CS is higher than the allowed CS\nType !force to pick the map anyway";
+      if (attributes.cs < this.option.advanced_filters.cs[0])
+        return "the beatmap CS is lower than the allowed CS";
+      if (attributes.cs > this.option.advanced_filters.cs[1])
+        return "the beatmap CS is higher than the allowed CS";
     }
+    return "";
+  }
+
+  miscFiltering(map: Beatmap): string {
     //playcount
     if(this.option.advanced_filters.play_count[1]){
       if (map.playcount < this.option.advanced_filters.play_count[0])
-        return "the beatmap has too few plays\nType !force to pick the map anyway";
+        return "the beatmap has too few plays";
       if (map.playcount > this.option.advanced_filters.play_count[1])
-        return "the beatmap has too many plays\nType !force to pick the map anyway";
+        return "the beatmap has too many plays";
     }
     //stamina_score
     if(this.option.advanced_filters.stamina_score){
       let stamina=(map.count_circles+map.count_sliders+map.count_spinners)/map.hit_length;
       if (stamina > this.option.advanced_filters.stamina_score)
-        return `the beatmap is too stamina draining (${stamina.toFixed(2)} circles per second)\nType !force to pick the map anyway`;
+        return `the beatmap is too stamina draining (${stamina.toFixed(2)} circles per second)`;
     }
     //year
     if(this.option.advanced_filters.year[1]){
@@ -723,16 +830,27 @@ export class MapValidator {
         year = date.getFullYear();
       }
       if (year < this.option.advanced_filters.year[0])
-        return "the beatmap is too old\nType !force to pick the map anyway";
+        return "the beatmap is too old";
       if (year> this.option.advanced_filters.year[1])
-        return "the beatmap is too new\nType !force to pick the map anyway";
+        return "the beatmap is too new";
     }
+    return "";
+  }
+
+  advancedFiltering(map: Beatmap): string {
+    let genreFoundInTags = false;
+    //nsfw
+    if(this.option.advanced_filters.nsfw){
+      if (map.beatmapset?.nsfw)
+        return "NSFW maps are not allowed in the lobby\nType !force to pick the map anyway";
+    }
+
     //language
     if(this.option.advanced_filters.languages.length>0){
-      let langs = this.option.advanced_filters.languages;
-      let allowedLangs = langs.join(', ');
+      let langs = this.option.advanced_filters.languages.map(lang => lang.toLowerCase());
+      let allowedLangs = this.option.advanced_filters.languages.join(', ');
       if(map.beatmapset?.language?.name === 'Unspecified'){
-        if(langs.includes('Japanese')){
+        if(langs.includes('japanese')){
           if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
             return "beatmap language couldn't be determined (missing metadata)\nType !force to pick the map anyway";
           }
@@ -741,20 +859,26 @@ export class MapValidator {
           return "beatmap language couldn't be determined (missing metadata)\nType !force to pick the map anyway";
         }
       }
-      else if (map.beatmapset?.language?.name && !this.option.advanced_filters.languages.includes(map.beatmapset?.language?.name)){
+      else if (map.beatmapset?.language?.name && !langs.includes(map.beatmapset?.language?.name.toLowerCase())){
         return `only ${allowedLangs} maps are allowed in the lobby\nType !force to pick the map anyway`;
       }
     }
 
     //genres
     if(this.option.advanced_filters.genres.length>0){
-      let genres = this.option.advanced_filters.genres;
-      let allowedGenres = genres.join(', ');
-      if(map.beatmapset?.genre?.name === 'Unspecified'){
-        return "beatmap genre couldn't be determined (missing metadata)\nType !force to pick the map anyway";
-      }
-      if (map.beatmapset?.genre?.name && !this.option.advanced_filters.genres.includes(map.beatmapset?.genre?.name)){
-        return `only ${allowedGenres} maps are allowed in the lobby\nType !force to pick the map anyway`;
+      if(map.beatmapset?.genre?.name){
+        let allowedGenres = this.option.advanced_filters.genres.join(', ');
+        let genresToCheck = this.option.advanced_filters.genres.flatMap(genre => genre.toLowerCase().split(' '));
+        let words = map.beatmapset?.tags.split(' ').map(word => word.toLowerCase());
+        if(words?.some(word => genresToCheck.includes(word))){
+          genreFoundInTags = true;
+        }
+        if(!genreFoundInTags && map.beatmapset?.genre?.name === 'Unspecified'){
+            return `beatmap genre couldn't be determined (missing metadata)\nType !force to pick the map anyway`;
+        }
+        else if(!genreFoundInTags && !genresToCheck.includes(map.beatmapset?.genre?.name.toLowerCase())){
+            return `only ${allowedGenres} maps are allowed in the lobby\nType !force to pick the map anyway`;
+        }
       }
     }
 
@@ -770,10 +894,12 @@ export class MapValidator {
     //tags
     if(this.option.advanced_filters.tags.allow.length>0){
       if (map.beatmapset?.tags){
-        let tags = this.option.advanced_filters.tags.allow.map(tag => tag.toLowerCase());
-        let words = map.beatmapset?.tags.split(' ');
-        if(!words.some(word => tags.includes(word.toLowerCase()))){
-          return `beatmap with such tags are not allowed in the lobby\nType !force to pick the map anyway`;
+        if(!genreFoundInTags){
+          let tags = this.option.advanced_filters.tags.allow.map(tag => tag.toLowerCase());
+          let words = map.beatmapset?.tags.split(' ').map(word => word.toLowerCase());
+          if(!words.some(word => tags.includes(word.toLowerCase()))){
+            return `beatmap with such tags are not allowed in the lobby\nType !force to pick the map anyway`;
+          }
         }
       }
       else{
