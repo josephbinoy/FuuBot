@@ -61,6 +61,7 @@ export interface FixedAttributes {
   ar: number;
   cs: number;
   hp: number;
+  length: number;
 }
 
 export class MapChecker extends LobbyPlugin {
@@ -223,6 +224,7 @@ export class MapChecker extends LobbyPlugin {
     let new_cs=map?.cs || 0
     let new_bpm=map?.bpm || 0
     let new_hp=map?.drain || 0
+    let new_length=map?.total_length || 0
 
     //calculate for HR or EZ
     if(modList.includes('HR')){
@@ -236,11 +238,13 @@ export class MapChecker extends LobbyPlugin {
       new_ar= modCalc.DoubleTimeAR(new_ar);
       new_od= modCalc.odDT(new_od);
       new_bpm=new_bpm*1.5;
+      new_length=new_length/1.5;
     }
     else if(modList.includes('HT')){
       new_ar= modCalc.HalfTimeAR(new_ar);
       new_od = modCalc.odHT(new_od);
       new_bpm=new_bpm*0.75;
+      new_length=new_length/0.75;
     }
 
     let attr: FixedAttributes = {
@@ -248,7 +252,9 @@ export class MapChecker extends LobbyPlugin {
       od: new_od,
       ar: new_ar,
       cs: new_cs,
-      hp: new_hp
+      hp: new_hp,
+      length: new_length
+
     };
     return attr;
   }
@@ -262,7 +268,8 @@ export class MapChecker extends LobbyPlugin {
         od: this.playingMap?.accuracy || 0,
         ar: this.playingMap?.ar || 0,
         cs: this.playingMap?.cs || 0,
-        hp: this.playingMap?.drain || 0
+        hp: this.playingMap?.drain || 0,
+        length: this.playingMap?.total_length || 0
       }
         if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
           let modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
@@ -275,6 +282,12 @@ export class MapChecker extends LobbyPlugin {
         }
         else if (this.option.star_max > 0 && this.option.star_max < starRating) {
           this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation.');
+        }
+        if (this.option.length_min > 0 && attributes.length < this.option.length_min) {
+          this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because map is shorter than allowed length');
+        }
+        else if (this.option.length_max > 0 && this.option.length_max < attributes.length) {
+          this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because map is longer than allowed length');
         }
         if(this.option.advanced_filters.enabled && (result = this.validator.fixedFiltering(attributes)) !== ""){
           this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because ${result}`);
@@ -325,7 +338,15 @@ export class MapChecker extends LobbyPlugin {
         player.overrides++;
         if(this.lobby.rejectedWrongLang){
           this.lobby.SendMessage('Forcing previous map...');
-          this.forceMap();
+          let attri: FixedAttributes={
+            bpm: this.rejectedMap?.bpm || 0,
+            od: this.rejectedMap?.accuracy || 0,
+            ar: this.rejectedMap?.ar || 0,
+            cs: this.rejectedMap?.cs || 0,
+            hp: this.rejectedMap?.drain || 0,
+            length: this.rejectedMap?.total_length || 0
+          }
+          this.forceMap(attri);
           this.lobby.rejectedWrongLang = false;
         }
         else{
@@ -461,10 +482,12 @@ export class MapChecker extends LobbyPlugin {
         od: map.accuracy,
         ar: map.ar,
         cs: map.cs,
-        hp: map.drain
+        hp: map.drain,
+        length: map.total_length
       }
+      let modList: string[] = [];
       if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
-        const modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
+        modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
         attributes = this.getFixedAttributes(map, modList);
         newStarRating = await WebApiClient.getDifficultyRating(mapId, modList);
         this.activeMods = '';
@@ -484,7 +507,7 @@ export class MapChecker extends LobbyPlugin {
           this.rejectMap(r.message, true);
       } 
       else 
-        this.acceptMap(map);
+        this.acceptMap(map, attributes, newStarRating, modList);
       } 
       catch (e: any) {
       if (e instanceof FetchBeatmapError) {
@@ -539,10 +562,10 @@ export class MapChecker extends LobbyPlugin {
     }
   }
 
-  private forceMap(): void {
+  private forceMap(attributes: FixedAttributes): void {
     if(this.rejectedMap){
       if (this.rejectedMap.beatmapset) {
-        const desc = this.getMapDescription(this.rejectedMap, this.rejectedMap.beatmapset);
+        const desc = this.getMapDescription(this.rejectedMap, this.rejectedMap.beatmapset, attributes, this.rejectedMap.difficulty_rating, []);
         this.lobby.SendMessage(`!mp map ${this.rejectedMap.id} ${this.option.gamemode.value} | ${desc}`);
       } else {
         this.lobby.SendMessage(`!mp map ${this.rejectedMap.id} ${this.option.gamemode.value}`);
@@ -558,9 +581,9 @@ export class MapChecker extends LobbyPlugin {
     }
   }
 
-  private acceptMap(map: BeatmapCache): void {
+  private acceptMap(map: BeatmapCache, attributes: FixedAttributes, sr: number, mods: string[]): void {
     if (map.beatmapset) {
-      const desc = this.getMapDescription(map, map.beatmapset);
+      const desc = this.getMapDescription(map, map.beatmapset, attributes, sr, mods);
       this.lobby.SendMessage(`!mp map ${this.lobby.mapId} ${this.option.gamemode.value} | ${desc}`);
     } else {
       this.lobby.SendMessage(`!mp map ${this.lobby.mapId} ${this.option.gamemode.value}`);
@@ -572,13 +595,17 @@ export class MapChecker extends LobbyPlugin {
     this.lobby.rejectedWrongLang = false;
   }
 
-  private getMapDescription(map: BeatmapCache, set: Beatmapset) {
+  private getMapDescription(map: BeatmapCache, set: Beatmapset, attributes: FixedAttributes, sr: number, mods: string[]) {
     let desc = this.option.map_description;
     desc = desc.replace(/\$\{title\}/g, set.title);
+    desc = desc.replace(/\$\{mods\}/g, mods.length!=0?`+${mods.join('')}`: "");
     desc = desc.replace(/\$\{map_id\}/g, map.id.toString());
     desc = desc.replace(/\$\{beatmapset_id\}/g, set.id.toString());
-    desc = desc.replace(/\$\{star\}/g, map.difficulty_rating.toFixed(2));
-    desc = desc.replace(/\$\{length\}/g, secToTimeNotation(map.total_length));
+    desc = desc.replace(/\$\{star\}/g, sr===0?map.difficulty_rating.toFixed(2):sr.toFixed(2));
+    desc = desc.replace(/\$\{length\}/g, secToTimeNotation(attributes.length));
+    desc = desc.replace(/\$\{bpm\}/g, Number.isInteger(attributes.bpm) ? attributes.bpm.toString() : attributes.bpm.toFixed(1));
+    desc = desc.replace(/\$\{ar\}/g, Number.isInteger(attributes.ar) ? attributes.ar.toString() : attributes.ar.toFixed(1));
+    desc = desc.replace(/\$\{cs\}/g, Number.isInteger(attributes.cs) ? attributes.cs.toString() : attributes.cs.toFixed(1));
     return desc;
   }
 
@@ -664,12 +691,12 @@ export class MapValidator {
       }
     }
 
-    else if (this.option.length_min > 0 && map.total_length < this.option.length_min) {
+    else if (this.option.length_min > 0 && attributes.length < this.option.length_min) {
       rate += (this.option.length_min - map.total_length) / 60.0;
       violationMsg='the beatmap length is shorter than the allowed length.';
     }
 
-    else if (this.option.length_max > 0 && this.option.length_max < map.total_length) {
+    else if (this.option.length_max > 0 && this.option.length_max < attributes.length) {
       rate += (map.total_length - this.option.length_max) / 60.0;
       violationMsg='the beatmap length is longer than the allowed length.';
     }
