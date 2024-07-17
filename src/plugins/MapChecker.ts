@@ -28,6 +28,7 @@ export type MapCheckerOption = {
       "genres": string[],
       "statuses": string[],
       "tags": {
+        "genre_tags": string[],
         "allow": string[],
         "deny": string[]
       }
@@ -39,7 +40,7 @@ export type MapCheckerOption = {
         "allow": string[],
         "deny": string[]
       }
-      "nsfw": boolean
+      "allow_nsfw": boolean
   };
   num_violations_allowed: number; // Number of times violations are allowed
   star_min: number;
@@ -840,7 +841,7 @@ export class MapValidator {
   advancedFiltering(map: Beatmap): string {
     let genreFoundInTags = false;
     //nsfw
-    if(this.option.advanced_filters.nsfw){
+    if(!this.option.advanced_filters.allow_nsfw){
       if (map.beatmapset?.nsfw)
         return "NSFW maps are not allowed in the lobby\nType !force to pick the map anyway";
     }
@@ -864,15 +865,22 @@ export class MapValidator {
       }
     }
 
+    //genre_tags
+    if(this.option.advanced_filters.tags.genre_tags.length>0){
+      if (map.beatmapset?.tags){
+        let genre_tags = this.option.advanced_filters.tags.genre_tags.flatMap(tag => tag.toLowerCase().split(' '));
+        let words = map.beatmapset?.tags.split(' ').map(word => word.toLowerCase());
+        if(words.some(word => genre_tags.includes(word.toLowerCase()))){
+          genreFoundInTags = true;
+        }
+      }
+    }
+
     //genres
     if(this.option.advanced_filters.genres.length>0){
       if(map.beatmapset?.genre?.name){
         let allowedGenres = this.option.advanced_filters.genres.join(', ');
-        let genresToCheck = this.option.advanced_filters.genres.flatMap(genre => genre.toLowerCase().split(' '));
-        let words = map.beatmapset?.tags.split(' ').map(word => word.toLowerCase());
-        if(words?.some(word => genresToCheck.includes(word))){
-          genreFoundInTags = true;
-        }
+        let genresToCheck = this.option.advanced_filters.genres.map(genre => genre.toLowerCase());
         if(!genreFoundInTags && map.beatmapset?.genre?.name === 'Unspecified'){
             return `beatmap genre couldn't be determined (missing metadata)\nType !force to pick the map anyway`;
         }
@@ -894,12 +902,10 @@ export class MapValidator {
     //tags
     if(this.option.advanced_filters.tags.allow.length>0){
       if (map.beatmapset?.tags){
-        if(!genreFoundInTags){
-          let tags = this.option.advanced_filters.tags.allow.map(tag => tag.toLowerCase());
-          let words = map.beatmapset?.tags.split(' ').map(word => word.toLowerCase());
-          if(!words.some(word => tags.includes(word.toLowerCase()))){
-            return `beatmap with such tags are not allowed in the lobby\nType !force to pick the map anyway`;
-          }
+        let tags = this.option.advanced_filters.tags.allow.map(tag => tag.toLowerCase());
+        let words = map.beatmapset?.tags.split(' ').map(word => word.toLowerCase());
+        if(!words.some(word => tags.includes(word.toLowerCase()))){
+          return `beatmap with such tags are not allowed in the lobby\nType !force to pick the map anyway`;
         }
       }
       else{

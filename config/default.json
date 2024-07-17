@@ -74,6 +74,7 @@
       "genres": [],
       "statuses": [],
       "tags": {
+        "genre_tags":[],
         "allow":[],
         "deny":[]
       },
@@ -85,7 +86,7 @@
         "allow":[],
         "deny":[]
       },
-      "nsfw": false
+      "allow_nsfw": false
     },
     "star_min": 0,
     "star_max": 0,
