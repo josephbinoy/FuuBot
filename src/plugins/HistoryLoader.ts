@@ -72,9 +72,8 @@ export class HistoryLoader extends LobbyPlugin {
         name = this.searchUsers(score.user_id) ?? 'unknown';
       }
       const pscore: PromptScore = {
-        name: name,
-        score: score.score,
-        mods_used: score.mods.join(',') ?? 'None'
+        name: `${name}${score.mods.length > 0 ? ` using ${score.mods.join('')} mod` : ''}`,
+        score: score.score
       }
       this.leaderboard.push(pscore);
       if (score.statistics.count_miss == 0)
