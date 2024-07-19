@@ -6,13 +6,15 @@ import { UserProfile } from '../webapi/UserProfile';
 import { getConfig } from '../TypedConfig';
 
 export interface ProfileFetcherOption {
+  allow_players_pp: [number, number],
+  under_range_msg: string,
+  over_range_msg: string,
   profile_expired_day: number
 }
 
 
 export class ProfileFetcher extends LobbyPlugin {
   option: ProfileFetcherOption;
-  hasError: boolean = false;
   profileMap: Map<string, UserProfile>;
   pendingNames: Set<string>;
   task: Promise<void>;
@@ -40,7 +42,6 @@ export class ProfileFetcher extends LobbyPlugin {
   }
 
   private onPlayerJoined(player: Player): void {
-    if (this.hasError) return;
     this.addTaskQueueIfNeeded(player);
   }
 
@@ -62,11 +63,11 @@ export class ProfileFetcher extends LobbyPlugin {
     this.task = this.task.then(async () => {
       try {
         const profile = await this.getProfileFromWebApi(player);
-
         if (profile !== null) {
+          if(this.checkAndBanPlayer(profile)) return;
           player.id = profile.id;
           player.profile = profile;
-          this.logger.info(`Fetching player profile: ${player.name}`);
+          this.logger.info(`Fetched player profile: ${player.name}`);
         } else {
           this.logger.warn(`Player cannot be found: ${player.name}`);
         }
@@ -74,10 +75,25 @@ export class ProfileFetcher extends LobbyPlugin {
       } catch (e: any) {
         this.logger.error(`@ProfileFetcher#addTaskQueueIfNeeded\n${e.message}\n${e.stack}`);
       }
-
     });
 
     return true;
+  }
+
+  private checkAndBanPlayer(profile: UserProfile): boolean {
+    if(this.option.allow_players_pp[1]){
+      if (profile.statistics.pp < this.option.allow_players_pp[0]) {
+        this.lobby.SendMessage(`!mp ban ${profile.username}`);
+        this.lobby.SendPrivateMessage(this.option.under_range_msg, profile.username);
+        return true;
+      }
+      else if(profile.statistics.pp > this.option.allow_players_pp[1]){
+        this.lobby.SendMessage(`!mp ban ${profile.username}`);
+        this.lobby.SendPrivateMessage(this.option.over_range_msg, profile.username);
+        return true;
+      }
+    }
+    return false;
   }
 
   private getProfileFromWebApi(player: Player): Promise<UserProfile | null> {

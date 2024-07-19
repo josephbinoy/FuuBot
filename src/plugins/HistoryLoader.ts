@@ -13,6 +13,10 @@ export class HistoryLoader extends LobbyPlugin {
   best_accers: string[] = [];
   fcers: string[] = [];
   no_missers: string[] = [];
+  modsUsed: boolean = false;
+  pastSummaries: string[] = [];
+  streak: number = 0;
+  previousWinner: string = '';
 
   constructor(lobby: Lobby) {
     super(lobby, 'HistoryLoader', 'history');
@@ -46,14 +50,26 @@ export class HistoryLoader extends LobbyPlugin {
           this.analyzeAndCreatePerfMetrics(latest_game);
           if (this.leaderboard.length > 1) {
             const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
-            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc, this.no_missers, sortedLeaderboard[0].name);
+            if(sortedLeaderboard[0].name===this.previousWinner){
+              this.streak++;
+            }
+            else{
+              this.streak=1;
+              this.previousWinner=sortedLeaderboard[0].name;
+            }
+            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc, this.no_missers, sortedLeaderboard[0].name, this.modsUsed, this.pastSummaries, this.streak);
             this.lobby.SendMessage(summary);
+            if (this.pastSummaries.length > 3) {
+              this.pastSummaries.shift();
+            }
+            this.pastSummaries.push(summary); 
           }
           this.leaderboard = [];
           this.best_acc = 0;
           this.best_accers = [];
           this.fcers = [];
           this.no_missers = [];
+          this.modsUsed = false;
         }
       } 
       catch (e: any) {
@@ -66,6 +82,9 @@ export class HistoryLoader extends LobbyPlugin {
     if (game == undefined) return;
     for (const score of game.scores) {
       if (score.passed == false) continue;
+      if (score.mods.length > 0) {
+        this.modsUsed = true;
+      }
       score.accuracy = parseFloat((score.accuracy * 100).toFixed(2))
       let name = [...this.lobby.players].find(p => p.id == score.user_id)?.name;
       if (name == undefined) {
