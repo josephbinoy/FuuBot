@@ -897,7 +897,7 @@ export class MapValidator {
     //stamina_score
     if(this.option.advanced_filters.stamina_formula_c_value){
       const cps=(map.count_circles+map.count_sliders+map.count_spinners)/map.hit_length;
-      const limit=getStaminaLimit(map.hit_length, this.option.advanced_filters.stamina_formula_c_value);
+      const limit=getStaminaLimit(map.hit_length/60, this.option.advanced_filters.stamina_formula_c_value);
       if (cps > limit)
         return `the beatmap is too stamina draining (${cps.toFixed(2)} circles per second)`;
     }
