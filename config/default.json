@@ -112,7 +112,7 @@
   },
   "OahrCli": {
     "invite_users": [],
-     "password": ""
+    "password": ""
   },
   "WebApi": {
     "client_id": 0,

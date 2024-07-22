@@ -1021,8 +1021,7 @@ export class MapValidator {
 }
 
 function getStaminaLimit(L: number, C: number): number{
-  L=L/60;
-  if(L <= 120) //less than 2 minutes
+  if(L <= 2) //less than 2 minutes
     return 0.8*C/L+0.6*C; //formula 1
   else //more than 2 minutes
     return 0.8*C/(L-12)+1.08*C; //formula 2
