@@ -1,5 +1,5 @@
 import { Lobby } from '../Lobby';
-import { Player } from '../Player';
+import { Player, escapeUserName } from '../Player';
 import { LobbyPlugin } from './LobbyPlugin';
 import { WebApiClient } from '../webapi/WebApiClient';
 import { UserProfile } from '../webapi/UserProfile';
@@ -83,12 +83,12 @@ export class ProfileFetcher extends LobbyPlugin {
   private checkAndBanPlayer(profile: UserProfile): boolean {
     if(this.option.allow_players_pp[1]){
       if (profile.statistics.pp < this.option.allow_players_pp[0]) {
-        this.lobby.SendMessage(`!mp ban ${profile.username}`);
+        this.lobby.SendMessage(`!mp ban ${escapeUserName(profile.username)}`);
         this.lobby.SendPrivateMessage(this.option.under_range_msg, profile.username);
         return true;
       }
       else if(profile.statistics.pp > this.option.allow_players_pp[1]){
-        this.lobby.SendMessage(`!mp ban ${profile.username}`);
+        this.lobby.SendMessage(`!mp ban ${escapeUserName(profile.username)}`);
         this.lobby.SendPrivateMessage(this.option.over_range_msg, profile.username);
         return true;
       }

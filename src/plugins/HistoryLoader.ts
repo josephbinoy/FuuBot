@@ -14,7 +14,7 @@ export class HistoryLoader extends LobbyPlugin {
   fcers: string[] = [];
   no_missers: string[] = [];
   modsUsed: boolean = false;
-  pastSummaries: string[] = [];
+  previousSummary: string='';
   streak: number = 0;
   previousWinner: string = '';
 
@@ -48,7 +48,7 @@ export class HistoryLoader extends LobbyPlugin {
           this.latest_event = latest_event;
           const latest_game = latest_event?.game;
           this.analyzeAndCreatePerfMetrics(latest_game);
-          if (this.leaderboard.length > 1) {
+          if (this.leaderboard.length >= 1) {
             const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
             if(sortedLeaderboard[0].name===this.previousWinner){
               this.streak++;
@@ -57,12 +57,21 @@ export class HistoryLoader extends LobbyPlugin {
               this.streak=1;
               this.previousWinner=sortedLeaderboard[0].name;
             }
-            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc, this.no_missers, sortedLeaderboard[0].name, this.modsUsed, this.pastSummaries, this.streak);
+            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc, this.no_missers, sortedLeaderboard[0].name, this.modsUsed, this.previousSummary, this.streak);
             this.lobby.SendMessage(summary);
-            if (this.pastSummaries.length > 3) {
-              this.pastSummaries.shift();
-            }
-            this.pastSummaries.push(summary); 
+            this.previousSummary=summary;
+          }
+          else if(this.leaderboard.length == 1){
+            this.previousSummary='';
+            if(this.leaderboard[0].name == this.previousWinner)
+              this.streak++;
+            else
+              this.streak=0;
+          }
+          else{
+            this.streak=0;
+            this.previousWinner='';
+            this.previousSummary='';
           }
           this.leaderboard = [];
           this.best_acc = 0;

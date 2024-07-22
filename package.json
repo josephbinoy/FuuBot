@@ -2,7 +2,7 @@
   "name": "fuubot",
   "description": "A Robust and Modern Auto Host Rotation bot for osu!",
   "main": "dist/cli/index.js",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "scripts": {
     "dist": "rimraf dist && tsc",
     "clean": "rimraf dist",

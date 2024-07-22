@@ -22,7 +22,7 @@ export type MapCheckerOption = {
       "bpm": [number, number],
       "cs": [number, number],
       "play_count": [number, number],
-      "stamina_score": number,
+      "stamina_formula_c_value": number,
       "year": [number, number],
       "languages": string[],
       "genres": string[],
@@ -436,11 +436,16 @@ export class MapChecker extends LobbyPlugin {
   }
 
   getRegulationDescription(): string {
+    let desc=''
     if (this.option.enabled) {
-      return this.validator.GetDescription();
+      desc=this.validator.GetDescription();
+      if(this.option.advanced_filters.enabled){
+        desc+=`\n${this.validator.GetAdvancedFiltersDescription()}`;
+      }
     } else {
-      return `Disabled (${this.validator.GetDescription()})`;
+      desc= `Disabled (${this.validator.GetDescription()})`;
     }
+    return desc;
   }
 
   SetEnabled(v: boolean): void {
@@ -546,9 +551,8 @@ export class MapChecker extends LobbyPlugin {
     this.logger.info(`Rejected the beatmap selected by ${this.lobby.host?.escaped_name} (${this.numViolations} / ${this.option.num_violations_allowed})`);
 
     if (showRegulation) {
-      this.lobby.SendMessage(`!mp map ${this.lastMapId} ${this.option.gamemode.value} | Current regulation: ${this.validator.GetDescription()}`);
+      this.lobby.SendMessage(`!mp map ${this.lastMapId} ${this.option.gamemode.value} | Current regulation: ${this.validator.GetDescription()}${this.option.advanced_filters.enabled?' | Type !r to get complete regulations':''}`);
       this.lobby.SendMessage(reason);
-      this.lobby.SendMessage('Attention! Star rating will not be calculated correctly if a global mod is applied.');
     } else {
       this.lobby.SendMessage(`!mp map ${this.lastMapId} ${this.option.gamemode.value} | ${reason}`);
     }
@@ -737,9 +741,26 @@ export class MapValidator {
   }
 
   GetDescription(): string {
+    let desc=''
     let d_star = '';
+    if (this.option.star_min > 0 && this.option.star_max > 0) {
+      d_star = `${this.option.star_min.toFixed(2)}*–${this.option.star_max.toFixed(2)}*`;
+    } else if (this.option.star_min > 0) {
+      d_star = `${this.option.star_min.toFixed(2)}* or more`;
+    } else if (this.option.star_max > 0) {
+      d_star = `upto ${this.option.star_max.toFixed(2)}*`;
+    }
+    if(d_star) desc+=`Star Rating: ${d_star}`;
     let d_length = '';
-    let d_gamemode = `Mode: ${this.option.gamemode.officialName}`;
+    if (this.option.length_min > 0 && this.option.length_max > 0) {
+      d_length = `${secToTimeNotation(this.option.length_min)}–${secToTimeNotation(this.option.length_max)}`;
+    } else if (this.option.length_min > 0) {
+      d_length = `${secToTimeNotation(this.option.length_min)} or more`;
+    } else if (this.option.length_max > 0) {
+      d_length = `upto ${secToTimeNotation(this.option.length_max)}`;
+    }
+    if(d_length) desc+=` | Length: ${d_length}`;
+    let d_gamemode = ` | Mode: ${this.option.gamemode.officialName}`;
     if (this.option.gamemode !== PlayMode.Osu) {
       if (this.option.allow_convert) {
         d_gamemode += ' (Converts allowed)';
@@ -748,28 +769,52 @@ export class MapValidator {
         d_gamemode += ' (Converts disallowed)';
       }
     }
+    desc+=d_gamemode;
+    return desc;
+  }
 
-    if (this.option.star_min > 0 && this.option.star_max > 0) {
-      d_star = `${this.option.star_min.toFixed(2)} <= star rating <= ${this.option.star_max.toFixed(2)}`;
-    } else if (this.option.star_min > 0) {
-      d_star = `${this.option.star_min.toFixed(2)} <= star rating`;
-    } else if (this.option.star_max > 0) {
-      d_star = `star rating <= ${this.option.star_max.toFixed(2)}`;
+  GetAdvancedFiltersDescription(): string {
+    let desc = '';
+    if(this.option.advanced_filters.ar[1]){
+      desc += `AR: ${this.option.advanced_filters.ar[0]}–${this.option.advanced_filters.ar[1]}`;
     }
-
-    if (this.option.length_min > 0 && this.option.length_max > 0) {
-      d_length = `${secToTimeNotation(this.option.length_min)} <= length <= ${secToTimeNotation(this.option.length_max)}`;
-    } else if (this.option.length_min > 0) {
-      d_length = `${secToTimeNotation(this.option.length_min)} <= length`;
-    } else if (this.option.length_max > 0) {
-      d_length = `length <= ${secToTimeNotation(this.option.length_max)}`;
+    if(this.option.advanced_filters.cs[1]){
+      if(desc) desc+=" | "
+      desc += `CS: ${this.option.advanced_filters.cs[0]}–${this.option.advanced_filters.cs[1]}`;
     }
-
-    return [d_star, d_length, d_gamemode].filter(d => d !== '').join(', ');
+    if(this.option.advanced_filters.bpm[1]){
+      if(desc) desc+=" | "
+      desc += `BPM: ${this.option.advanced_filters.bpm[0]}–${this.option.advanced_filters.bpm[1]}`;
+    }
+    if(this.option.advanced_filters.od[1]){
+      if(desc) desc+=" | "
+      desc += `OD: ${this.option.advanced_filters.od[0]}–${this.option.advanced_filters.od[1]}`;
+    }
+    if(this.option.advanced_filters.year[1]){
+      if(desc) desc+=" | "
+      desc += `Years: ${this.option.advanced_filters.year[0]}–${this.option.advanced_filters.year[1]}`;
+    }
+    if(this.option.advanced_filters.play_count[1]){
+      if(desc) desc+=" | "
+      desc += `Playcount: ${this.option.advanced_filters.play_count[0]}–${this.option.advanced_filters.play_count[1]}`;
+    }
+    if(this.option.advanced_filters.languages.length>0){
+      if(desc) desc+="\n";
+      desc += `Languages: ${this.option.advanced_filters.languages.join(', ')}`;
+    }
+    if(this.option.advanced_filters.genres.length>0){
+      if(desc) desc+="\n";
+      desc += `Genres: ${this.option.advanced_filters.genres.join(', ')}`;
+    }
+    if(!this.option.advanced_filters.allow_nsfw){
+      if(desc) desc+="\n";
+      desc += 'NSFW maps are not allowed';
+    }
+    return desc;
   }
 
   checkBlackList(map: Beatmap): string {
-      //blacklists
+      //tags
       if(this.option.advanced_filters.tags.deny.length>0){
         if (map.beatmapset?.tags) {
           let words = map.beatmapset.tags.split(' ');
@@ -780,17 +825,23 @@ export class MapValidator {
           }
         }
       }
-  
+      
+      //mappers
       if(this.option.advanced_filters.mappers.deny.length>0){
+        let mappers = this.option.advanced_filters.mappers.deny.map(mapper => mapper.toLowerCase());
         if (map.beatmapset?.creator) {
-          let mappers = this.option.advanced_filters.mappers.deny.map(mapper => mapper.toLowerCase());
           let mapperLower=map.beatmapset?.creator.toLowerCase();
           if (mappers.includes(mapperLower)){
-            return `beatmaps by this mapper are not allowed in the lobby`;
+            return `beatmapsets by this mapper are not allowed in the lobby`;
           }
+        }
+        let diffMapper=map.version.toLowerCase();
+        if(mappers.some(mapper => diffMapper.includes(mapper))){
+          return `beatmaps by this mapper are not allowed in the lobby`;
         }
       }
   
+      //artists
       if(this.option.advanced_filters.artists.deny.length>0){
         if(map.beatmapset?.artist){
           let artistLower = map.beatmapset?.artist.toLowerCase();
@@ -844,10 +895,11 @@ export class MapValidator {
         return "the beatmap has too many plays";
     }
     //stamina_score
-    if(this.option.advanced_filters.stamina_score){
-      let stamina=(map.count_circles+map.count_sliders+map.count_spinners)/map.hit_length;
-      if (stamina > this.option.advanced_filters.stamina_score)
-        return `the beatmap is too stamina draining (${stamina.toFixed(2)} circles per second)`;
+    if(this.option.advanced_filters.stamina_formula_c_value){
+      const cps=(map.count_circles+map.count_sliders+map.count_spinners)/map.hit_length;
+      const limit=getStaminaLimit(map.hit_length, this.option.advanced_filters.stamina_formula_c_value);
+      if (cps > limit)
+        return `the beatmap is too stamina draining (${cps.toFixed(2)} circles per second)`;
     }
     //year
     if(this.option.advanced_filters.year[1]){
@@ -942,14 +994,15 @@ export class MapValidator {
 
     //mappers
     if(this.option.advanced_filters.mappers.allow.length>0){
-      if(map.beatmapset?.creator){
-        let mappers = this.option.advanced_filters.mappers.allow.map(mapper => mapper.toLowerCase());
-        let allowedMappers = this.option.advanced_filters.mappers.allow.join(', ');
-        let mapperLower=map.beatmapset?.creator?.toLowerCase();
+      let mappers = this.option.advanced_filters.mappers.allow.map(mapper => mapper.toLowerCase());
+      let allowedMappers = this.option.advanced_filters.mappers.allow.join(', ');
+      let diffMapper=map.version.toLowerCase();
+      if(!mappers.some(mapper => diffMapper.includes(mapper)) && map.beatmapset?.creator){
+        let mapperLower=map.beatmapset.creator.toLowerCase();
         if (!mappers.includes(mapperLower)){
           return `only ${allowedMappers} maps are allowed in the lobby\nType !force to pick the map anyway`;
         }
-    }
+      }
     }
 
     //artists
@@ -965,6 +1018,14 @@ export class MapValidator {
     }
     return "";
   }
+}
+
+function getStaminaLimit(L: number, C: number): number{
+  L=L/60;
+  if(L <= 120) //less than 2 minutes
+    return 0.8*C/L+0.6*C; //formula 1
+  else //more than 2 minutes
+    return 0.8*C/(L-12)+1.08*C; //formula 2
 }
 
 function containsJapanese(title: string, artist: string): boolean {
