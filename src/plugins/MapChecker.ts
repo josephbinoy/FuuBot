@@ -9,40 +9,45 @@ import { Beatmap, Beatmapset } from '../webapi/Beatmapsets';
 import { getConfig } from '../TypedConfig';
 import { Logger } from '../Loggers';
 import { WebApiClient } from '../webapi/WebApiClient';
-// import { insertPlayer, insertBeatmap } from '../db/helpers';
+import { PickEntry, getCount, insertPicks, deleteOldPicks, hasPlayerPickedMap} from '../db/helpers';
 import * as modCalc from '../helpers/modCalculator'
 import fs from 'fs';
 
 export type MapCheckerOption = {
   enabled: boolean;
+  dynamic_overplayed_map_checker:{
+    enabled: boolean,
+    pick_count_limit: number,
+    picks_delete_time_period: string
+  },
   advanced_filters: {
-      "enabled": boolean,
-      "od": [number, number],
-      "ar": [number, number],
-      "bpm": [number, number],
-      "cs": [number, number],
-      "play_count": [number, number],
-      "stamina_formula_c_value": number,
-      "year": [number, number],
-      "languages": string[],
-      "genres": string[],
-      "statuses": string[],
-      "tags": {
-        "genre_tags": string[],
-        "allow": string[],
-        "deny": string[]
+      enabled: boolean,
+      od: [number, number],
+      ar: [number, number],
+      bpm: [number, number],
+      cs: [number, number],
+      play_count: [number, number],
+      stamina_formula_c_value: number,
+      year: [number, number],
+      languages: string[],
+      genres: string[],
+      statuses: string[],
+      tags: {
+        genre_tags: string[],
+        allow: string[],
+        deny: string[]
       }
-      "artists": {
-        "allow": string[],
-        "deny": string[]
+      artists: {
+        allow: string[],
+        deny: string[]
       }
-      "mappers": {
-        "allow": string[],
-        "deny": string[]
+      mappers: {
+        allow: string[],
+        deny: string[]
       }
-      "allow_nsfw": boolean
+      allow_nsfw: boolean
   };
-  num_violations_allowed: number; // Number of times violations are allowed
+  num_violations_allowed: number;
   star_min: number;
   star_max: number;
   length_min: number;
@@ -64,6 +69,14 @@ export interface FixedAttributes {
   length: number;
 }
 
+export class OperationQueue {
+  private queue: Promise<any> = Promise.resolve();
+
+  addToQueue(operation: () => Promise<void>) {
+    this.queue = this.queue.then(operation, operation);
+  }
+}
+
 export class MapChecker extends LobbyPlugin {
   option: MapCheckerOption;
   rejectedMap: BeatmapCache | undefined;
@@ -76,6 +89,10 @@ export class MapChecker extends LobbyPlugin {
   override: boolean = false;
   maxOverrides: number = 5;
   activeMods: string=''
+  picksBuffer: Map<string, PickEntry> = new Map<string, PickEntry>();
+  operationQueue: OperationQueue = new OperationQueue();
+  playCount: number = 0;
+  bufferCount:Map<number, Set<number>> = new Map<number, Set<number>>();
   modAcronym: Record<string, string>= {
     'Easy': 'EZ',
     'NoFail': 'NF',
@@ -106,6 +123,44 @@ export class MapChecker extends LobbyPlugin {
     }
     this.validator = new MapValidator(this.option, this.logger, this.lobby);
     this.registerEvents();
+  }
+
+  private async addPickAndUpdateCount(pick: PickEntry, hasPicked:boolean): Promise<void> {
+    this.operationQueue.addToQueue(async () => {
+      //picksBuffer
+      const pickKey = `${pick.beatmapId}-${pick.pickerId}`;
+      if (this.picksBuffer.has(pickKey)) {
+        this.picksBuffer.get(pickKey)!.pickDate = pick.pickDate;
+      } else {
+        this.picksBuffer.set(pickKey, pick);
+      }
+      if(hasPicked) return;
+      //bufferCount
+      if (this.bufferCount.has(pick.beatmapId)) {
+        this.bufferCount.get(pick.beatmapId)!.add(pick.pickerId);
+      } else {
+        this.bufferCount.set(pick.beatmapId, new Set([pick.pickerId]));
+      }
+    });
+  }
+
+  private onPlayerLeft(): void {
+    if(this.lobby.players.size === 0 && this.picksBuffer.size>10){
+      this.operationQueue.addToQueue(async () => {
+        try {
+            if(this.lobby.dbClient){
+              this.logger.info('Inserting to database');
+              await insertPicks(this.lobby.dbClient, this.picksBuffer);
+              this.picksBuffer.clear();
+              this.bufferCount.clear();
+              this.logger.info('Deleting old picks');
+              await deleteOldPicks(this.lobby.dbClient, this.option.dynamic_overplayed_map_checker.picks_delete_time_period);
+            }
+        } catch (error) {
+            this.logger.error('@MapChecker#databaseOperations'+error);
+        }
+      });
+    }
   }
 
   private registerEvents(): void {
@@ -139,6 +194,11 @@ export class MapChecker extends LobbyPlugin {
           break;
       }
     });
+    if (this.option.dynamic_overplayed_map_checker.enabled) {
+      this.lobby.PlayerLeft.on(a => {
+          this.onPlayerLeft();
+      });
+    }
   }
 
   private onJoinedLobby(): void {
@@ -146,33 +206,6 @@ export class MapChecker extends LobbyPlugin {
       this.SendPluginMessage('enabledMapChecker');
     }
   }
-
-  private getDate(): string {
-    const date = new Date();
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
-  }
-
-  // private async addPlayertoDB(player_id: number, player_name: string): Promise<void> {
-  //   try {
-  //     if(this.lobby.dbClient){
-  //       await insertPlayer(this.lobby.dbClient, player_id, player_name);
-  //     }
-  //   } catch (err) {
-  //       this.logger.error('@MapChecker#addPlayertoDB\n' + err);
-  //   }
-  // }
-
-  // private async addBeatmaptoDB(player_id: number): Promise<void> {
-  //   try {
-  //     let dateString: string = this.getDate();
-  //     if(this.lobby.dbClient){
-  //       await insertBeatmap(this.lobby.dbClient, this.lobby.mapId, this.lobby.mapTitle, dateString, player_id);
-  //     }
-  //   } catch (err) {
-  //       this.logger.error('@MapChecker#addBeatmaptoDB\n' + err);
-  //   }
-  // }
 
   private async onMatchStarted() {
     if (this.checkingMapId) {
@@ -205,15 +238,6 @@ export class MapChecker extends LobbyPlugin {
         }
       }
     }
-    // try{
-    //   let p = this.lobby.host;
-    //   if(p){
-    //     await this.addPlayertoDB(p?.id, p?.name);
-    //     await this.addBeatmaptoDB(p?.id);
-    //   }
-    // } catch (err) {
-    //   this.logger.error('@MapChecker#onMatchStartedDBInsert\n' + err);
-    // }
     this.cancelCheck();
     this.lobby.mapStartTimeMs = Date.now()
   }
@@ -475,6 +499,21 @@ export class MapChecker extends LobbyPlugin {
     }
     try {
       const map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
+      if (this.option.dynamic_overplayed_map_checker.enabled && this.lobby.dbClient){
+        this.playCount = await getCount(this.lobby.dbClient, map.beatmapset_id);
+        this.playCount += this.bufferCount.get(map.beatmapset_id)?.size || 0;
+        if(this.playCount > this.option.dynamic_overplayed_map_checker.pick_count_limit){
+          this.rejectMap(`This beatmapset is overplayed! (Played ${this.playCount} times)`, false);
+          return;
+        }
+        const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
+        const pick={ 
+          beatmapId: map.beatmapset_id,
+          pickerId: this.lobby.host?.id || 0, 
+          pickDate: Math.floor(new Date().getTime() / 1000)
+        }
+        this.addPickAndUpdateCount(pick, hasPicked);
+      }
       this.lobby.maxCombo = map.max_combo;
       this.lobby.mapLength = map.total_length;
       if (mapId !== this.checkingMapId) {
@@ -610,6 +649,7 @@ export class MapChecker extends LobbyPlugin {
     desc = desc.replace(/\$\{bpm\}/g, Number.isInteger(attributes.bpm) ? attributes.bpm.toString() : attributes.bpm.toFixed(1));
     desc = desc.replace(/\$\{ar\}/g, Number.isInteger(attributes.ar) ? attributes.ar.toString() : attributes.ar.toFixed(1));
     desc = desc.replace(/\$\{cs\}/g, Number.isInteger(attributes.cs) ? attributes.cs.toString() : attributes.cs.toFixed(1));
+    desc = desc.replace(/\$\{play_count\}/g, (this.playCount==0)?'Never picked':`${this.playCount.toString()} times`); 
     return desc;
   }
 
@@ -899,7 +939,7 @@ export class MapValidator {
       const cps=(map.count_circles+map.count_sliders+map.count_spinners)/map.hit_length;
       const limit=getStaminaLimit(map.hit_length/60, this.option.advanced_filters.stamina_formula_c_value);
       if (cps > limit)
-        return `the beatmap is too stamina draining (${cps.toFixed(2)} circles per second)`;
+        return `the beatmap is too stamina draining! Max Stamina: ${limit.toFixed(2)} | Your Map: ${cps.toFixed(2)}`;
     }
     //year
     if(this.option.advanced_filters.year[1]){

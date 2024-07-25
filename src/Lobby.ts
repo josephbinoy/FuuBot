@@ -9,8 +9,8 @@ import { LobbyPlugin } from './plugins/LobbyPlugin';
 import { PlayMode } from './Modes';
 import { getConfig } from './TypedConfig';
 import { getLogger, Logger } from './Loggers';
-// import setupDatabase from './db/connect';
-// import { Database } from 'sqlite';
+import setupDatabase from './db/connect';
+import { Database } from 'sqlite';
 
 export enum LobbyStatus {
   Standby,
@@ -32,11 +32,12 @@ export interface LobbyOption {
   transferhost_timeout_ms: number
   command_list: string,
   command_list_cooltime_ms: number,
+  db_path: string
 }
 
 export class Lobby {
   // Members
-  // dbClient: Database | null = null;
+  dbClient: Database | null = null;
   option: LobbyOption;
   ircClient: IIrcClient;
   lobbyName: string | undefined;
@@ -105,13 +106,19 @@ export class Lobby {
     this.logger = getLogger('lobby');
     this.chatlogger = getLogger('chat');
     this.transferHostTimeout = new DeferredAction(() => this.onTimeoutedTransferHost());
-    // this.initializeDB();
+    if(this.option.db_path !== '') this.initializeDB(this.option.db_path);
     this.registerEvents();
   }
 
-//   private async initializeDB() {
-//     this.dbClient = await setupDatabase();
-// }
+  private async initializeDB(path: string) {
+    this.dbClient = await setupDatabase(path);
+    if (!this.dbClient) {
+      this.logger.error('Failed to initialize the database');
+    }
+    else{
+      this.logger.info('Database client initialized');
+    }
+  }
 
   private registerEvents(): void {
     this.events = {

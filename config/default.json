@@ -16,7 +16,8 @@
     "info_message_announcement_interval_ms": 0,
     "transferhost_timeout_ms": 5000,
     "command_list": "You can find the command list here: [https://sites.google.com/view/lomaine-command-list/home Command List]",
-    "command_list_cooltime_ms": 20000
+    "command_list_cooltime_ms": 20000,
+    "db_path": ""
   },
   "AfkKicker": {
     "enabled": true,
@@ -58,6 +59,11 @@
   },
   "MapChecker": {
     "enabled": true,
+    "dynamic_overplayed_map_checker":{
+      "enabled": false,
+      "pick_count_limit": 0,
+      "picks_delete_time_period": ""
+    },
     "advanced_filters": {
       "enabled": false,
       "od": [0,0],

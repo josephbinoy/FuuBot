@@ -48,7 +48,7 @@ export class HistoryLoader extends LobbyPlugin {
           this.latest_event = latest_event;
           const latest_game = latest_event?.game;
           this.analyzeAndCreatePerfMetrics(latest_game);
-          if (this.leaderboard.length >= 1) {
+          if (this.leaderboard.length > 1) {
             const sortedLeaderboard = this.leaderboard.sort((a, b) => b.score - a.score);
             if(sortedLeaderboard[0].name===this.previousWinner){
               this.streak++;
