@@ -6,6 +6,7 @@ import { parser } from '../parsers/CommandParser';
 import { OahrBase } from './OahrBase';
 import { LobbyKeeperOption, } from '../plugins/LobbyKeeper';
 import { ConfigTypeHint, getConfig } from '../TypedConfig';
+import { createIrcClient } from './index';
 
 const logger = getLogger('cli');
 
@@ -54,7 +55,7 @@ export class OahrCli extends OahrBase {
   constructor(client: IIrcClient, option: Partial<LobbyKeeperOption> = {}) {
     super(client);
     this.scene = this.scenes.mainMenu;
-    this.lobbyopts = getConfig('LobbyKeeper', option, OPTION_TYPE_HINTS) as LobbyKeeperOption;
+    this.lobbyopts = getConfig('LobbyKeeper', option, OPTION_TYPE_HINTS) as LobbyKeeperOption;    
   }
 
   private scenes = {
@@ -233,15 +234,20 @@ export class OahrCli extends OahrBase {
       });
     }
     const r = rl as readline.Interface;
+    let lobbyTimer: NodeJS.Timeout | null = null; 
 
     logger.trace('Waiting for registration from osu!Bancho...');
     logger.info('Connecting to osu!Bancho...');
     this.client.once('registered', () => {
       logger.info('Connected. :D');
-      console.log('\n=== Welcome to FuuBot Menu ===');
-      console.log(mainMenuCommandsMessage);
       r.setPrompt(this.prompt);
       r.prompt();
+      console.log('Auto making lobby in 20 seconds... Type \'stop\' to cancel.');
+      // Store the timer ID
+      lobbyTimer = setTimeout(async () => {
+        await this.makeLobbyAsync(this.lobbyopts.title || '__');
+        this.transitionToLobbyMenu();
+      }, 20000); // 20 seconds delay
     });
     this.client.once('part', () => {
       r.close();
@@ -249,23 +255,37 @@ export class OahrCli extends OahrBase {
 
     r.on('line', line => {
       logger.trace(`Scene: ${this.scene.name}, Line: ${line}`);
-      this.scene.action(line).then(() => {
-        if (!this.exited) {
-          r.setPrompt(this.prompt);
-          r.prompt();
-        } else {
-          logger.trace('Closing interface...');
-          r.close();
+      if (line.trim().toLowerCase() === 'stop') {
+        if (lobbyTimer !== null) {
+          clearTimeout(lobbyTimer); // Cancel the timer
+          console.log('Lobby auto make cancelled.');
+          lobbyTimer = null; // Reset the timer variable
         }
-      });
+      } 
+      else {
+        this.scene.action(line).then(() => {
+          if (!this.exited) {
+            r.setPrompt(this.prompt);
+            r.prompt();
+          } else {
+            logger.trace('Closing interface...');
+            r.close();
+          }
+        });
+      }
     });
     r.on('close', () => {
       if (this.client) {
         logger.info('Readline closed.');
         if (this.client.conn && !this.client.conn.requestedDisconnect) {
-          this.client.disconnect('Goodbye.', () => {
+          this.client.disconnect('Goodbye.', async () => {
             logger.info('IRC client disconnected.');
-            process.exit(0);
+            if (this.exited) {
+              process.exit(0);
+            }
+            else {
+              createIrcClient();
+            }
           });
         } else {
           logger.info('Exiting...');
@@ -278,6 +298,5 @@ export class OahrCli extends OahrBase {
   transitionToLobbyMenu() {
     this.scene = this.scenes.lobbyMenu;
     this.scene.prompt = `${this.lobby.channel || ''} > `;
-    console.log(lobbyMenuCommandsMessage);
   }
 }

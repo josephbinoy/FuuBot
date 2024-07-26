@@ -668,8 +668,6 @@ export function secToTimeNotation(sec: number): string {
 export class MapValidator {
   logger: Logger;
   option: MapCheckerOption;
-  overplayedIDs: number[]=[];
-  overplayedNames: string[]=[];
   blacklistedIDs: number[]=[];
   blacklistedNames: string[]=[];
   lobbyInstance: Lobby;
@@ -681,8 +679,6 @@ export class MapValidator {
   constructor(option: MapCheckerOption, logger: Logger, lobbyInstance: Lobby) {
     this.option = option;
     this.logger = logger;
-    this.overplayedIDs = this.LoadFilters('./filters/overplayed_ids.txt').map(Number);
-    this.overplayedNames = this.LoadFilters('./filters/overplayed_names.txt');
     this.blacklistedIDs = this.LoadFilters('./filters/blacklisted_ids.txt').map(Number);
     this.blacklistedNames = this.LoadFilters('./filters/blacklisted_names.txt');
     this.lobbyInstance = lobbyInstance;
@@ -750,14 +746,9 @@ export class MapValidator {
       violationMsg = result;
     }
 
-    else if(this.overplayedIDs.includes(map.beatmapset_id) || this.overplayedNames.includes(map.beatmapset?.title || '')){
-      rate=69;
-      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map.';
-    }
-    
     else if(this.blacklistedIDs.includes(map.beatmapset_id) || this.blacklistedNames.includes(map.beatmapset?.title || '')){
       rate=69;
-      violationMsg='it is not blocked in the lobby. Please pick another map.';
+      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map.';
     }
 
     else if(this.option.advanced_filters.enabled && (result = this.fixedFiltering(attributes)) !== "" || (result = this.miscFiltering(map)) !== ""){

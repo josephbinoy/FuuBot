@@ -138,6 +138,7 @@ export class Lobby {
       registered: async () => {
         if (this.status === LobbyStatus.Entered && this.channel) {
           this.logger.warn('Detected a network reconnection! Loading multiplayer settings...');
+          if(this.lobbyId) await this.EnterLobbyAsync(this.lobbyId);
           await this.LoadMpSettingsAsync();
         }
       },
