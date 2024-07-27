@@ -114,7 +114,7 @@ class WebApiClientClass {
       return;
     }
     try {
-      fs.unlink(p);
+      await fs.unlink(p);
     } catch (e: any) {
       this.logger.error(`@WebApiClient#deleteStoredToken\n${e.message}\n${e.stack}`);
     }
