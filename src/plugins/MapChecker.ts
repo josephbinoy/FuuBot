@@ -81,6 +81,7 @@ export class MapChecker extends LobbyPlugin {
   option: MapCheckerOption;
   rejectedMap: BeatmapCache | undefined;
   playingMap: BeatmapCache | undefined;
+  lastPlayedMap: BeatmapCache | undefined;
   oldMapId: number = 0;
   lastMapId: number = 0;
   checkingMapId: number = 0;
@@ -88,6 +89,8 @@ export class MapChecker extends LobbyPlugin {
   validator: MapValidator;
   override: boolean = false;
   maxOverrides: number = 5;
+  defaultIds: number[]=[];
+  defaultIndex: number = -1;
   activeMods: string=''
   picksBuffer: Map<string, PickEntry> = new Map<string, PickEntry>();
   operationQueue: OperationQueue = new OperationQueue();
@@ -109,7 +112,7 @@ export class MapChecker extends LobbyPlugin {
     'Spun Out': 'SO',
   };
 
-  diffAffectingMods = ['Easy', 'HalfTime', 'HardRock', 'DoubleTime', 'Nightcore', 'FlashLight'];
+  diffAffectingMods = ['Easy', 'HalfTime', 'HardRock', 'DoubleTime', 'Nightcore', 'Flashlight'];
 
 
   constructor(lobby: Lobby, option: Partial<MapCheckerUncheckedOption> = {}) {
@@ -122,6 +125,7 @@ export class MapChecker extends LobbyPlugin {
       this.lobby.gameMode = this.option.gamemode;
     }
     this.validator = new MapValidator(this.option, this.logger, this.lobby);
+    this.defaultIds = this.validator.LoadFilters('./maplists/default_map_ids.txt').map(Number);
     this.registerEvents();
   }
 
@@ -145,21 +149,25 @@ export class MapChecker extends LobbyPlugin {
   }
 
   private onPlayerLeft(): void {
-    if(this.lobby.players.size === 0 && this.picksBuffer.size>10){
-      this.operationQueue.addToQueue(async () => {
-        try {
-            if(this.lobby.dbClient){
-              this.logger.info('Inserting to database');
-              await insertPicks(this.lobby.dbClient, this.picksBuffer);
-              this.picksBuffer.clear();
-              this.bufferCount.clear();
-              this.logger.info('Deleting old picks');
-              await deleteOldPicks(this.lobby.dbClient, this.option.dynamic_overplayed_map_checker.picks_delete_time_period);
-            }
-        } catch (error) {
-            this.logger.error('@MapChecker#databaseOperations'+error);
-        }
-      });
+    if(this.lobby.players.size === 0){
+      this.override = false;
+      this.enforceDefaultMap();
+      if(this.option.dynamic_overplayed_map_checker.enabled && this.picksBuffer.size>5){
+        this.operationQueue.addToQueue(async () => {
+          try {
+              if(this.lobby.dbClient){
+                this.logger.info('Inserting to database');
+                await insertPicks(this.lobby.dbClient, this.picksBuffer);
+                this.picksBuffer.clear();
+                this.bufferCount.clear();
+                this.logger.info('Deleting old picks');
+                await deleteOldPicks(this.lobby.dbClient, this.option.dynamic_overplayed_map_checker.picks_delete_time_period);
+              }
+          } catch (error) {
+              this.logger.error('@MapChecker#databaseOperations'+error);
+          }
+        });
+      }
     }
   }
 
@@ -194,24 +202,17 @@ export class MapChecker extends LobbyPlugin {
           break;
       }
     });
-    if (this.option.dynamic_overplayed_map_checker.enabled) {
-      this.lobby.PlayerLeft.on(a => {
-          this.onPlayerLeft();
-      });
-    }
+    this.lobby.PlayerLeft.on(a => this.onPlayerLeft());
   }
 
   private onJoinedLobby(): void {
     if (this.option.enabled) {
       this.SendPluginMessage('enabledMapChecker');
     }
+    this.enforceDefaultMap();
   }
 
   private async onMatchStarted() {
-    if (this.checkingMapId) {
-      this.lastMapId = this.checkingMapId;
-    }
-    this.override=false;
     this.oldMapId=this.lobby.mapId;
     if (this.option.enabled) {
       if (!this.lobby.isValidMap){
@@ -298,20 +299,20 @@ export class MapChecker extends LobbyPlugin {
         if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
           let modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
           attributes = this.getFixedAttributes(this.playingMap, modList);
-          starRating = await WebApiClient.getDifficultyRating(this.checkingMapId, modList);
+          starRating = await WebApiClient.getDifficultyRating(this.lobby.mapId, modList);
           this.activeMods = '';
         }
         if (this.option.star_min > 0 && starRating < this.option.star_min) {
-          this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map below regulation.');
+          this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map below regulation. (${starRating}* < ${this.option.star_min}*)`);
         }
         else if (this.option.star_max > 0 && this.option.star_max < starRating) {
-          this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation.');
+          this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation. (${starRating}* > ${this.option.star_min}*)`);
         }
         if (this.option.length_min > 0 && attributes.length < this.option.length_min) {
-          this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because map is shorter than allowed length');
+          this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because map is shorter than allowed length (${secToTimeNotation(attributes.length)} < ${secToTimeNotation(this.option.length_min)})`);
         }
         else if (this.option.length_max > 0 && this.option.length_max < attributes.length) {
-          this.lobby.SendMessage('!mp abort\n!mp mods Freemod\nMatch was aborted because map is longer than allowed length');
+          this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because map is longer than allowed length (${secToTimeNotation(attributes.length)} > ${secToTimeNotation(this.option.length_max)})`);
         }
         if(this.option.advanced_filters.enabled && (result = this.validator.fixedFiltering(attributes)) !== ""){
           this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because ${result}`);
@@ -490,6 +491,7 @@ export class MapChecker extends LobbyPlugin {
   private async cancelCheck() {
     this.checkingMapId = 0;
     this.numViolations = 0;
+    this.override = false;
   }
 
   private async check(mapId: number, mapTitle: string): Promise<void> {
@@ -595,13 +597,33 @@ export class MapChecker extends LobbyPlugin {
     } else {
       this.lobby.SendMessage(`!mp map ${this.lastMapId} ${this.option.gamemode.value} | ${reason}`);
     }
+    this.playingMap = this.lastPlayedMap;
     if(this.lastMapId != this.oldMapId)
       this.lobby.isValidMap = true;
 
-    this.checkingMapId = 0;
-
     if (this.option.num_violations_allowed !== 0 && this.option.num_violations_allowed <= this.numViolations) {
       this.skipHost();
+    }
+  }
+
+  private async enforceDefaultMap(): Promise<void> {
+    this.defaultIndex = (this.defaultIndex + 1) % this.defaultIds.length;
+    const mapId=this.defaultIds[this.defaultIndex];
+    let map: BeatmapCache | undefined;
+    try{
+      map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
+    } catch (e: any) {
+      this.logger.error(`@MapChecker#enforceDefaultMap\n${e.message}\n${e.stack}`);
+    }
+    if(map){
+      this.lobby.SendMessage(`!mp map ${mapId} ${this.option.gamemode.value}`);
+      this.lobby.isValidMap = true;
+      this.lastMapId = mapId;
+      this.lastPlayedMap = map;
+      this.playingMap = map;
+      this.lobby.maxCombo = this.playingMap.max_combo;
+      this.lobby.mapLength = this.playingMap.total_length;
+      this.lobby.rejectedWrongLang = false;
     }
   }
 
@@ -615,8 +637,11 @@ export class MapChecker extends LobbyPlugin {
       }
       this.SendPluginMessage('validatedMap');
       this.lobby.isValidMap = true;
-      this.lastMapId = this.lobby.mapId;
+      this.lastMapId = this.rejectedMap.id;
+      this.lastPlayedMap = this.rejectedMap;
       this.playingMap = this.rejectedMap;
+      this.lobby.maxCombo = this.rejectedMap.max_combo;
+      this.lobby.mapLength = this.rejectedMap.total_length;
       this.lobby.rejectedWrongLang = false;
     }
     else{
@@ -634,6 +659,7 @@ export class MapChecker extends LobbyPlugin {
     this.SendPluginMessage('validatedMap');
     this.lobby.isValidMap = true;
     this.lastMapId = this.lobby.mapId;
+    this.lastPlayedMap = map;
     this.playingMap = map;
     this.lobby.rejectedWrongLang = false;
   }
@@ -641,7 +667,15 @@ export class MapChecker extends LobbyPlugin {
   private getMapDescription(map: BeatmapCache, set: Beatmapset, attributes: FixedAttributes, sr: number, mods: string[]) {
     let desc = this.option.map_description;
     desc = desc.replace(/\$\{title\}/g, set.title);
-    desc = desc.replace(/\$\{mods\}/g, mods.length!=0?`+${mods.join('')}`: "");
+    if(mods.length>0){
+      if(mods.includes('DT') && mods.includes('NC')){
+        const index = mods.indexOf('DT');
+        mods.splice(index, 1);
+      }
+      desc = desc.replace(/\$\{mods\}/g, `+${mods.join('')}`);
+    }
+    else
+      desc = desc.replace(/\$\{mods\}/g, '');
     desc = desc.replace(/\$\{map_id\}/g, map.id.toString());
     desc = desc.replace(/\$\{beatmapset_id\}/g, set.id.toString());
     desc = desc.replace(/\$\{star\}/g, sr===0?map.difficulty_rating.toFixed(2):sr.toFixed(2));
@@ -668,7 +702,7 @@ export function secToTimeNotation(sec: number): string {
 export class MapValidator {
   logger: Logger;
   option: MapCheckerOption;
-  blacklistedIDs: number[]=[];
+  blacklistedIds: number[]=[];
   blacklistedNames: string[]=[];
   lobbyInstance: Lobby;
   //TODO: Create own type for languages and genres!!
@@ -679,8 +713,8 @@ export class MapValidator {
   constructor(option: MapCheckerOption, logger: Logger, lobbyInstance: Lobby) {
     this.option = option;
     this.logger = logger;
-    this.blacklistedIDs = this.LoadFilters('./filters/blacklisted_ids.txt').map(Number);
-    this.blacklistedNames = this.LoadFilters('./filters/blacklisted_names.txt');
+    this.blacklistedIds = this.LoadFilters('./maplists/blacklisted_mapset_ids.txt').map(Number);
+    this.blacklistedNames = this.LoadFilters('./maplists/blacklisted_mapset_names.txt');
     this.lobbyInstance = lobbyInstance;
   }
 
@@ -709,13 +743,13 @@ export class MapValidator {
 
     const mapmode = PlayMode.from(map.mode);
     if (mapmode !== this.option.gamemode && this.option.gamemode !== null) {
-      violationMsg=`the gamemode is not ${this.option.gamemode.officialName}.`;
+      violationMsg=`the gamemode is not ${this.option.gamemode.officialName}`;
       rate += 1;
     }
 
     else if (this.option.star_min > 0 && starRating < this.option.star_min) {
       rate += parseFloat((this.option.star_min - starRating).toFixed(2));
-      violationMsg='the beatmap star rating is lower than the allowed star rating.';
+      violationMsg=`the beatmap star rating is lower than the allowed star rating`;
       if (modsOn) {
         this.lobbyInstance.SendMessage('!mp mods Freemod');
         modsOn = false;
@@ -724,7 +758,7 @@ export class MapValidator {
 
     else if (this.option.star_max > 0 && this.option.star_max < starRating) {
       rate += parseFloat((starRating - this.option.star_max).toFixed(2));
-      violationMsg='the beatmap star rating is higher than the allowed star rating.';
+      violationMsg=`the beatmap star rating is higher than the allowed star rating`;
       if (modsOn) {
         this.lobbyInstance.SendMessage('!mp mods Freemod');
         modsOn = false;
@@ -733,12 +767,12 @@ export class MapValidator {
 
     else if (this.option.length_min > 0 && attributes.length < this.option.length_min) {
       rate += (this.option.length_min - map.total_length) / 60.0;
-      violationMsg='the beatmap length is shorter than the allowed length.';
+      violationMsg=`the beatmap length is shorter than the allowed length`;
     }
 
     else if (this.option.length_max > 0 && this.option.length_max < attributes.length) {
       rate += (map.total_length - this.option.length_max) / 60.0;
-      violationMsg='the beatmap length is longer than the allowed length.';
+      violationMsg=`the beatmap length is longer than the allowed length`;
     }
 
     else if(this.option.advanced_filters.enabled && (result = this.checkBlackList(map)) !== ""){
@@ -746,9 +780,9 @@ export class MapValidator {
       violationMsg = result;
     }
 
-    else if(this.blacklistedIDs.includes(map.beatmapset_id) || this.blacklistedNames.includes(map.beatmapset?.title || '')){
+    else if(this.blacklistedIds.includes(map.beatmapset_id) || this.blacklistedNames.includes(map.beatmapset?.title || '')){
       rate=69;
-      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map.';
+      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map';
     }
 
     else if(this.option.advanced_filters.enabled && (result = this.fixedFiltering(attributes)) !== "" || (result = this.miscFiltering(map)) !== ""){
