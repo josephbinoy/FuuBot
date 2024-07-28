@@ -98,4 +98,5 @@ config/production.json
 config/local*
 nohup.out
 dist/
+maplists/
 

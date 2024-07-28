@@ -125,7 +125,7 @@ export class MapChecker extends LobbyPlugin {
       this.lobby.gameMode = this.option.gamemode;
     }
     this.validator = new MapValidator(this.option, this.logger, this.lobby);
-    this.defaultIds = this.validator.LoadFilters('./maplists/default_map_ids.txt').map(Number);
+    this.defaultIds = this.validator.LoadFilters('./maplists/default_map_ids.txt').map(Number).filter(id => !isNaN(id));
     this.registerEvents();
   }
 
@@ -607,6 +607,7 @@ export class MapChecker extends LobbyPlugin {
   }
 
   private async enforceDefaultMap(): Promise<void> {
+    if(this.defaultIds.length === 0) return;
     this.defaultIndex = (this.defaultIndex + 1) % this.defaultIds.length;
     const mapId=this.defaultIds[this.defaultIndex];
     let map: BeatmapCache | undefined;
@@ -713,18 +714,19 @@ export class MapValidator {
   constructor(option: MapCheckerOption, logger: Logger, lobbyInstance: Lobby) {
     this.option = option;
     this.logger = logger;
-    this.blacklistedIds = this.LoadFilters('./maplists/blacklisted_mapset_ids.txt').map(Number);
+    this.blacklistedIds = this.LoadFilters('./maplists/blacklisted_mapset_ids.txt').map(Number).filter(id => !isNaN(id));
     this.blacklistedNames = this.LoadFilters('./maplists/blacklisted_mapset_names.txt');
     this.lobbyInstance = lobbyInstance;
   }
 
   LoadFilters(filePath: string): string[] {
-    try{
+    try {
       const data = fs.readFileSync(filePath, 'utf-8');
-      const filters = data.split('\n').map(line => line.trim())
+      const filters = data.split('\n')
+        .map(line => line.trim())
+        .filter(line => line !== '');
       return filters;
-    }
-    catch(error){
+    } catch (error) {
       return [];
     }
   }
