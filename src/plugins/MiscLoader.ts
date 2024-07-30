@@ -4,6 +4,7 @@ import { LobbyPlugin } from './LobbyPlugin';
 import { BanchoResponseType } from '../parsers/CommandParser';
 import { BeatmapRepository, FetchBeatmapError, FetchBeatmapErrorReason } from '../webapi/BeatmapRepository';
 import { WebApiClient } from '../webapi/WebApiClient';
+import { getSkills, Skill } from '../helpers/osuskills'
 
 /**
  * Get beatmap mirror link from Beatconnect
@@ -14,7 +15,10 @@ export class MiscLoader extends LobbyPlugin {
   beatconnectURL: string = 'https://beatconnect.io/b/${beatmapset_id}';
   nerinyanURL: string = 'https://api.nerinyan.moe/d/${beatmapset_id}';
   canSeeRank: boolean = false;
-
+  lastUsageMap: Map<string, number> = new Map();
+  playerCooldown: number = 2 * 60 * 1000; // 2 minutes
+  globalCooldown: number = 10 * 1000; // 10 seconds
+  lastInvoked: number = 0;
   constructor(lobby: Lobby) {
     super(lobby, 'MiscLoader', 'miscLoader');
     if (WebApiClient.available) {
@@ -38,6 +42,30 @@ export class MiscLoader extends LobbyPlugin {
         this.checkMirror(this.lobby.mapId);
       }
     }
+    else if(command === '!skills') {
+      this.handleSkillsCommand(player, param);
+    }
+  }
+
+  async handleSkillsCommand(player: Player, param: string): Promise<void> {
+    const currentTime = Date.now();
+    if (currentTime - this.lastInvoked < this.globalCooldown) {
+        this.lobby.SendMessage(`The command is on cooldown. Please wait ${Math.ceil((this.globalCooldown - (currentTime - this.lastInvoked)) / 1000)} seconds`);
+        return;
+      }
+    const lastUsageTime = this.lastUsageMap.get(player.name);
+    if (lastUsageTime && (currentTime - lastUsageTime < this.playerCooldown)) {
+      this.lobby.SendMessage(`${player.name}, please wait ${Math.ceil((this.playerCooldown - (currentTime - lastUsageTime)) / 1000)} seconds before using this command again.`);
+      return;
+    }
+    if(param===''){
+      this.lobby.SendMessage('Please specify a username! Usage: !skills <username>');
+      return;
+    }
+    this.lastInvoked = currentTime;
+    this.lastUsageMap.set(player.name, currentTime);
+    const skillsMsg: string = await getSkills(param);
+    this.lobby.SendMessageWithCoolTime(skillsMsg, 'skills_msg', 5000);
   }
 
   async checkMirror(mapId: number): Promise<void> {
