@@ -129,7 +129,7 @@ export class MapChecker extends LobbyPlugin {
     this.registerEvents();
   }
 
-  private async addPickAndUpdateCount(pick: PickEntry, hasPicked:boolean): Promise<void> {
+  private addPickAndUpdateCount(pick: PickEntry, hasPicked:boolean): void {
     this.operationQueue.addToQueue(async () => {
       //picksBuffer
       const pickKey = `${pick.beatmapId}-${pick.pickerId}`;
@@ -148,25 +148,46 @@ export class MapChecker extends LobbyPlugin {
     });
   }
 
+  private queueInsert(): void {
+    this.operationQueue.addToQueue(async () => {
+      try {
+          if(this.lobby.dbClient){
+            this.logger.info('Inserting to database');
+            await insertPicks(this.lobby.dbClient, this.picksBuffer);
+            this.picksBuffer.clear();
+            this.bufferCount.clear();
+            this.lobby.lastDbUpdateTime = Date.now();
+          }
+      } catch (error) {
+          this.logger.error('@MapChecker#databaseInsert'+error);
+      }
+    });
+  }
+
+  private updateDatabase(): void {
+    this.operationQueue.addToQueue(async () => {
+      try {
+          if(this.lobby.dbClient){
+            this.logger.info('Inserting to database');
+            await insertPicks(this.lobby.dbClient, this.picksBuffer);
+            this.picksBuffer.clear();
+            this.bufferCount.clear();
+            this.lobby.lastDbUpdateTime = Date.now();
+            this.logger.info('Deleting old picks');
+            await deleteOldPicks(this.lobby.dbClient, this.option.dynamic_overplayed_map_checker.picks_delete_time_period);
+          }
+      } catch (error) {
+          this.logger.error('@MapChecker#databaseOperations'+error);
+      }
+    });
+  }
+
   private onPlayerLeft(): void {
     if(this.lobby.players.size === 0){
       this.override = false;
       this.enforceDefaultMap();
       if(this.option.dynamic_overplayed_map_checker.enabled && this.picksBuffer.size>5){
-        this.operationQueue.addToQueue(async () => {
-          try {
-              if(this.lobby.dbClient){
-                this.logger.info('Inserting to database');
-                await insertPicks(this.lobby.dbClient, this.picksBuffer);
-                this.picksBuffer.clear();
-                this.bufferCount.clear();
-                this.logger.info('Deleting old picks');
-                await deleteOldPicks(this.lobby.dbClient, this.option.dynamic_overplayed_map_checker.picks_delete_time_period);
-              }
-          } catch (error) {
-              this.logger.error('@MapChecker#databaseOperations'+error);
-          }
-        });
+        this.updateDatabase();
       }
     }
   }
@@ -304,18 +325,27 @@ export class MapChecker extends LobbyPlugin {
         }
         if (this.option.star_min > 0 && starRating < this.option.star_min) {
           this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map below regulation. (${starRating}* < ${this.option.star_min}*)`);
+          return;
         }
         else if (this.option.star_max > 0 && this.option.star_max < starRating) {
           this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation. (${starRating}* > ${this.option.star_min}*)`);
+          return;
         }
         if (this.option.length_min > 0 && attributes.length < this.option.length_min) {
           this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because map is shorter than allowed length (${secToTimeNotation(attributes.length)} < ${secToTimeNotation(this.option.length_min)})`);
+          return;
         }
         else if (this.option.length_max > 0 && this.option.length_max < attributes.length) {
           this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because map is longer than allowed length (${secToTimeNotation(attributes.length)} > ${secToTimeNotation(this.option.length_max)})`);
+          return;
         }
         if(this.option.advanced_filters.enabled && (result = this.validator.fixedFiltering(attributes)) !== ""){
           this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because ${result}`);
+          return;
+        }
+        const now = Date.now();
+        if (this.option.dynamic_overplayed_map_checker.enabled && this.picksBuffer.size>5 && now - this.lobby.lastDbUpdateTime > 3600000 && attributes.length > 120){
+          this.queueInsert();
         }
       }
     catch (e: any) {

@@ -38,6 +38,7 @@ export interface LobbyOption {
 export class Lobby {
   // Members
   dbClient: Database | null = null;
+  lastDbUpdateTime: number = 0;
   option: LobbyOption;
   ircClient: IIrcClient;
   lobbyName: string | undefined;
