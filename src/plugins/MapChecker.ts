@@ -67,6 +67,7 @@ export interface FixedAttributes {
   cs: number;
   hp: number;
   length: number;
+  hit_length: number
 }
 
 export class OperationQueue {
@@ -271,6 +272,7 @@ export class MapChecker extends LobbyPlugin {
     let new_bpm=map?.bpm || 0
     let new_hp=map?.drain || 0
     let new_length=map?.total_length || 0
+    let new_hit_length=map?.hit_length || 0
 
     //calculate for HR or EZ
     if(modList.includes('HR')){
@@ -285,12 +287,14 @@ export class MapChecker extends LobbyPlugin {
       new_od= modCalc.odDT(new_od);
       new_bpm=new_bpm*1.5;
       new_length=new_length/1.5;
+      new_hit_length=new_hit_length/1.5;
     }
     else if(modList.includes('HT')){
       new_ar= modCalc.HalfTimeAR(new_ar);
       new_od = modCalc.odHT(new_od);
       new_bpm=new_bpm*0.75;
       new_length=new_length/0.75;
+      new_hit_length=new_hit_length/0.75;
     }
 
     let attr: FixedAttributes = {
@@ -299,8 +303,8 @@ export class MapChecker extends LobbyPlugin {
       ar: new_ar,
       cs: new_cs,
       hp: new_hp,
-      length: new_length
-
+      length: new_length,
+      hit_length: new_hit_length
     };
     return attr;
   }
@@ -315,7 +319,8 @@ export class MapChecker extends LobbyPlugin {
         ar: this.playingMap?.ar || 0,
         cs: this.playingMap?.cs || 0,
         hp: this.playingMap?.drain || 0,
-        length: this.playingMap?.total_length || 0
+        length: this.playingMap?.total_length || 0,
+        hit_length: this.playingMap?.hit_length || 0
       }
         if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
           let modList = this.activeMods.split(', ').map(mod => this.modAcronym[mod]);
@@ -399,7 +404,8 @@ export class MapChecker extends LobbyPlugin {
             ar: this.rejectedMap?.ar || 0,
             cs: this.rejectedMap?.cs || 0,
             hp: this.rejectedMap?.drain || 0,
-            length: this.rejectedMap?.total_length || 0
+            length: this.rejectedMap?.total_length || 0,
+            hit_length: this.rejectedMap?.hit_length || 0
           }
           this.forceMap(attri);
           this.lobby.rejectedWrongLang = false;
@@ -559,7 +565,8 @@ export class MapChecker extends LobbyPlugin {
         ar: map.ar,
         cs: map.cs,
         hp: map.drain,
-        length: map.total_length
+        length: map.total_length,
+        hit_length: map.hit_length
       }
       let modList: string[] = [];
       if (this.activeMods != '' && this.diffAffectingMods.some(mod => this.activeMods.includes(mod))) {
@@ -697,6 +704,7 @@ export class MapChecker extends LobbyPlugin {
 
   private getMapDescription(map: BeatmapCache, set: Beatmapset, attributes: FixedAttributes, sr: number, mods: string[]) {
     let desc = this.option.map_description;
+    const cps=(map.count_circles+map.count_sliders+map.count_spinners)/attributes.hit_length;
     desc = desc.replace(/\$\{title\}/g, set.title);
     if(mods.length>0){
       if(mods.includes('DT') && mods.includes('NC')){
@@ -714,6 +722,7 @@ export class MapChecker extends LobbyPlugin {
     desc = desc.replace(/\$\{bpm\}/g, Number.isInteger(attributes.bpm) ? attributes.bpm.toString() : attributes.bpm.toFixed(1));
     desc = desc.replace(/\$\{ar\}/g, Number.isInteger(attributes.ar) ? attributes.ar.toString() : attributes.ar.toFixed(1));
     desc = desc.replace(/\$\{cs\}/g, Number.isInteger(attributes.cs) ? attributes.cs.toString() : attributes.cs.toFixed(1));
+    desc = desc.replace(/\$\{stamina\}/g, cps.toFixed(2));
     desc = desc.replace(/\$\{play_count\}/g, (this.playCount==0)?'Never picked':`${this.playCount.toString()} times`); 
     return desc;
   }
@@ -817,7 +826,7 @@ export class MapValidator {
       violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map';
     }
 
-    else if(this.option.advanced_filters.enabled && (result = this.fixedFiltering(attributes)) !== "" || (result = this.miscFiltering(map)) !== ""){
+    else if(this.option.advanced_filters.enabled && (result = this.fixedFiltering(attributes)) !== "" || (result = this.miscFiltering(map, attributes.hit_length)) !== ""){
       rate=69;
       violationMsg=result;
     }
@@ -829,7 +838,7 @@ export class MapValidator {
 
     if (rate > 0) {
       let message;
-      const mapDesc = `[${map.url} ${map.beatmapset?.title}] (Star rating: ${starRating}, Length: ${secToTimeNotation(map.total_length)})`;
+      const mapDesc = `[${map.url} ${map.beatmapset?.title}] (Star rating: ${starRating}, Length: ${secToTimeNotation(attributes.length)})`;
       message = `${mapDesc} was rejected because ${violationMsg}`;
       return { rate, message };
     } 
@@ -894,6 +903,17 @@ export class MapValidator {
     if(this.option.advanced_filters.play_count[1]){
       if(desc) desc+=" | "
       desc += `Playcount: ${this.option.advanced_filters.play_count[0]}–${this.option.advanced_filters.play_count[1]}`;
+    }
+    if(this.option.advanced_filters.stamina_formula_c_value){
+      if(desc) desc+="\n";
+      const staminaParts = [];
+      const minutes = [1, 2, 3, 4, 6, 8, 10];
+      for(let i=0; i<minutes.length; i++){
+        const limit = getStaminaLimit(minutes[i], this.option.advanced_filters.stamina_formula_c_value);
+        staminaParts.push(`${minutes[i]}m = ${limit.toFixed(2)}`);
+      }
+      const stamina_desc = staminaParts.join(' | ');
+      desc += `Stamina Limit (CPS): ${stamina_desc}`;
     }
     if(this.option.advanced_filters.languages.length>0){
       if(desc) desc+="\n";
@@ -983,7 +1003,7 @@ export class MapValidator {
     return "";
   }
 
-  miscFiltering(map: Beatmap): string {
+  miscFiltering(map: Beatmap, hit_length: number): string {
     //playcount
     if(this.option.advanced_filters.play_count[1]){
       if (map.playcount < this.option.advanced_filters.play_count[0])
@@ -993,8 +1013,8 @@ export class MapValidator {
     }
     //stamina_score
     if(this.option.advanced_filters.stamina_formula_c_value){
-      const cps=(map.count_circles+map.count_sliders+map.count_spinners)/map.hit_length;
-      const limit=getStaminaLimit(map.hit_length/60, this.option.advanced_filters.stamina_formula_c_value);
+      const cps=(map.count_circles+map.count_sliders+map.count_spinners)/hit_length;
+      const limit=getStaminaLimit(hit_length/60, this.option.advanced_filters.stamina_formula_c_value);
       if (cps > limit)
         return `the beatmap is too stamina draining! Max Stamina: ${limit.toFixed(2)} | Your Map: ${cps.toFixed(2)}`;
     }

@@ -251,6 +251,7 @@ export class Lobby {
       this.playersMap.set(ename, nu);
       if (this.option.authorized_users.includes(username)) {
         nu.setRole(Roles.Authorized);
+        this.SendMessage('!mp addref '+ename);
       }
       return nu;
     }
