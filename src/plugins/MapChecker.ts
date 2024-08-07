@@ -704,7 +704,8 @@ export class MapChecker extends LobbyPlugin {
 
   private getMapDescription(map: BeatmapCache, set: Beatmapset, attributes: FixedAttributes, sr: number, mods: string[]) {
     let desc = this.option.map_description;
-    const cps=(map.count_circles+map.count_sliders+map.count_spinners)/attributes.hit_length;
+    const cps = (map.count_circles+map.count_sliders+map.count_spinners)/attributes.hit_length;
+    const csr = map.count_sliders == 0 ? '∞' : (map.count_circles / map.count_sliders).toFixed(1);
     desc = desc.replace(/\$\{title\}/g, set.title);
     if(mods.length>0){
       if(mods.includes('DT') && mods.includes('NC')){
@@ -713,8 +714,9 @@ export class MapChecker extends LobbyPlugin {
       }
       desc = desc.replace(/\$\{mods\}/g, `+${mods.join('')}`);
     }
-    else
+    else{
       desc = desc.replace(/\$\{mods\}/g, '');
+    }
     desc = desc.replace(/\$\{map_id\}/g, map.id.toString());
     desc = desc.replace(/\$\{beatmapset_id\}/g, set.id.toString());
     desc = desc.replace(/\$\{star\}/g, sr===0?map.difficulty_rating.toFixed(2):sr.toFixed(2));
@@ -723,6 +725,7 @@ export class MapChecker extends LobbyPlugin {
     desc = desc.replace(/\$\{ar\}/g, Number.isInteger(attributes.ar) ? attributes.ar.toString() : attributes.ar.toFixed(1));
     desc = desc.replace(/\$\{cs\}/g, Number.isInteger(attributes.cs) ? attributes.cs.toString() : attributes.cs.toFixed(1));
     desc = desc.replace(/\$\{stamina\}/g, cps.toFixed(2));
+    desc = desc.replace(/\$\{csr\}/g, csr);
     desc = desc.replace(/\$\{play_count\}/g, (this.playCount==0)?'Never picked':`${this.playCount.toString()} times`); 
     return desc;
   }

@@ -6,7 +6,7 @@ import path from 'path';
 import { URL } from 'url';
 import { promises as fs } from 'fs';
 import { UserProfile, trimProfile } from './UserProfile';
-import { History } from './HistoryTypes';
+import { History, UserScore } from './HistoryTypes';
 import { Beatmapset } from './Beatmapsets';
 import { FetchBeatmapError, FetchBeatmapErrorReason} from './BeatmapRepository';
 import { getLogger, Logger } from '../Loggers';
@@ -279,6 +279,20 @@ class WebApiClientClass {
 
   async getHistory(matchid: number | undefined): Promise<History> {
     const data = await this.accessApi(`https://osu.ppy.sh/api/v2/matches/${matchid}`, {
+      method: 'GET'
+    });
+    return data;
+  }
+
+  async getBestScores(userId: number): Promise<UserScore[]> {
+    const data = await this.accessApi(`https://osu.ppy.sh/api/v2/users/${userId}/scores/best?limit=100`, {
+      method: 'GET'
+    });
+    return data;
+  }
+
+  async getRecentScores(userId: number): Promise<UserScore> {
+    const data = await this.accessApi(`https://osu.ppy.sh/api/v2/users/${userId}/scores/recent?include_fails=1`, {
       method: 'GET'
     });
     return data;
