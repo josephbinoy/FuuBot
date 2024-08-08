@@ -7,6 +7,7 @@ import { WebApiClient } from '../webapi/WebApiClient';
 import { getSkills, calculateStats } from '../helpers/extraCommands'
 import { UserScore } from '../webapi/HistoryTypes';
 import { UserProfile } from '../webapi/UserProfile';
+import { timeAgo } from '../db/helpers';
 
 /**
  * Get beatmap mirror link from Beatconnect
@@ -21,6 +22,7 @@ export class MiscLoader extends LobbyPlugin {
   playerCooldown: number = 2 * 60 * 1000; // 2 minutes
   globalCooldown: number = 10 * 1000; // 10 seconds
   lastInvokedSkill: number = 0;
+  lastInvokedRs: number = 0;
   constructor(lobby: Lobby) {
     super(lobby, 'MiscLoader', 'miscLoader');
     if (WebApiClient.available) {
@@ -47,6 +49,39 @@ export class MiscLoader extends LobbyPlugin {
     else if(command === '!skills') {
       this.handleSkillsCommand(player, param);
     }
+    else if(command === '!rs') {
+      this.handleRecentScoreCommand(player);
+    }
+  }
+
+  async handleRecentScoreCommand(player: Player): Promise<void> {
+    const currentTime = Date.now();
+    if (currentTime - this.lastInvokedSkill < this.globalCooldown) {
+        this.lobby.SendMessage(`The command is on cooldown. Please wait ${Math.ceil((this.globalCooldown - (currentTime - this.lastInvokedSkill)) / 1000)} seconds`);
+        return;
+      }
+    this.lastInvokedRs = currentTime;
+    try{
+      let recentScores: UserScore[] = [];
+      if(player.id){
+        recentScores = await WebApiClient.getRecentScores(player.id);
+      }
+      else{
+        this.lobby.SendMessage(`An error occurred while fetching recent scores for ${player.name}`);
+        return;
+      }
+      if (recentScores.length === 0) {
+        this.lobby.SendMessage(`No recent scores found for ${player.name}`);
+        return;
+      }
+      const rs = recentScores[0];
+      const rsMsg = `${player.name}'s recent score is a ${rs.rank} rank ${(rs.accuracy*100).toFixed(2)}% on [https://osu.ppy.sh/b/${rs.beatmap.id} ${rs.beatmapset.title.substring(0, 15)} [${rs.beatmap.version}]]${rs.mods.length>0?` with ${rs.mods.join("")}`:" "}worth ${rs.pp?Math.round(rs.pp):0}pp! (Updated ${timeAgo(rs.created_at)})`;
+      this.lobby.SendMessage(rsMsg);
+    } catch (e: any) {
+      this.logger.error(`@MiscLoader#handleRecentScoreCommand: There was an error while fetching recent scores for ${player.escaped_name}\n${e.message}\n${e.stack}`);
+      this.lobby.SendMessage(`An error occurred while fetching recent scores for ${player.name}`);
+      return;
+    }
   }
 
   async getStats(param: string): Promise<string> {
@@ -64,7 +99,13 @@ export class MiscLoader extends LobbyPlugin {
     if (id === 0){
       return "";
     }
-    const bestScores: UserScore[] = await WebApiClient.getBestScores(id);
+    let bestScores: UserScore[] = [];
+    try{
+      bestScores = await WebApiClient.getBestScores(id);
+    } catch (e: any) {
+      this.logger.error(`@MiscLoader#getStats: There was an error while fetching best scores for ${id}\n${e.message}\n${e.stack}`);
+      return "";
+    }
     const statsMsg = calculateStats(bestScores, id, param)
     return statsMsg;
   }

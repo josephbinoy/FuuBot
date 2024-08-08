@@ -117,7 +117,7 @@ export type UserScore = {
   mods: string[],
   passed: boolean,
   perfect: boolean,
-  pp: number,
+  pp: number | null,
   rank: string,
   replay: boolean,
   score: number,

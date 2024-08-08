@@ -9,7 +9,7 @@ import { Beatmap, Beatmapset } from '../webapi/Beatmapsets';
 import { getConfig } from '../TypedConfig';
 import { Logger } from '../Loggers';
 import { WebApiClient } from '../webapi/WebApiClient';
-import { PickEntry, getCount, insertPicks, deleteOldPicks, hasPlayerPickedMap} from '../db/helpers';
+import { PickEntry, getCount, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo} from '../db/helpers';
 import * as modCalc from '../helpers/modCalculator'
 import fs from 'fs';
 
@@ -73,8 +73,9 @@ export interface FixedAttributes {
 export class OperationQueue {
   private queue: Promise<any> = Promise.resolve();
 
-  addToQueue(operation: () => Promise<void>) {
+  addToQueue<T>(operation: () => Promise<T>): Promise<T> {
     this.queue = this.queue.then(operation, operation);
+    return this.queue;
   }
 }
 
@@ -146,6 +147,20 @@ export class MapChecker extends LobbyPlugin {
       } else {
         this.bufferCount.set(pick.beatmapId, new Set([pick.pickerId]));
       }
+    });
+  }
+
+  private async checkBufferForMap(beatmapId: number, pickerId: number): Promise<PickEntry | null>{
+    return this.operationQueue.addToQueue(async () => {
+      let mostRecentPick: PickEntry | null = null;
+      for (const entry of this.picksBuffer.values()) {
+          if (entry.beatmapId === beatmapId &&  entry.pickerId !== pickerId) {
+              if (!mostRecentPick || entry.pickDate > mostRecentPick.pickDate) {
+                  mostRecentPick = entry;
+              }
+          }
+      }
+      return mostRecentPick;
     });
   }
 
@@ -388,12 +403,12 @@ export class MapChecker extends LobbyPlugin {
     }
   }
 
-  private onReceivedChatCommand(command: string, param: string, player: Player): void {
+  private async onReceivedChatCommand(command: string, param: string, player: Player) {
     if (command === '!r' || command === '!regulation') {
       this.lobby.SendMessageWithCoolTime(this.getRegulationDescription(), 'regulation', 10000);
       return;
     }
-    if(command === '!force' && player.isHost) {
+    else if(command === '!force' && player.isHost) {
       if(player.overrides < this.maxOverrides){
         player.overrides++;
         if(this.lobby.rejectedWrongLang){
@@ -419,7 +434,7 @@ export class MapChecker extends LobbyPlugin {
         this.lobby.SendMessage(`Sorry! You have forced too many maps this session. (Maximum ${this.maxOverrides})`);
       return;
     }
-    if(command === '!timeleft' && this.lobby.isMatching){
+    else if(command === '!timeleft' && this.lobby.isMatching){
       const timeLeft = Math.floor(((this.lobby.mapStartTimeMs+this.lobby.mapLength*1000)-Date.now())/1000);
       if(timeLeft<0){
         this.lobby.SendMessage('The match will end in a few seconds...');
@@ -429,7 +444,34 @@ export class MapChecker extends LobbyPlugin {
       const sec = timeLeft%60;
       this.lobby.SendMessage(`Approx. time left to finish current match: ${min}m ${sec}s`);
     }
-
+    else if(command === '!ms' && !this.lobby.isMatching){
+      let statMsg;
+      if (this.option.dynamic_overplayed_map_checker.enabled && this.lobby.dbClient && this.playingMap){
+        const bufferRecentPick = await this.checkBufferForMap(this.playingMap.beatmapset_id, this.lobby.host?.id || 0);
+        if(bufferRecentPick){
+          let name = "";
+          const user = await WebApiClient.getUser(bufferRecentPick.pickerId);
+          if (user)
+              name = user.username;
+          else
+              name = "anonymous";
+          const pickDate = new Date(bufferRecentPick.pickDate * 1000);
+          statMsg = `Previously picked by [https://osu.ppy.sh/users/${bufferRecentPick.pickerId} ${name}] ${timeAgo(pickDate.toISOString())}`; 
+        }
+        else {
+          statMsg = await getMapStats(this.lobby.dbClient, this.playingMap.beatmapset_id);
+        }
+        if(statMsg){
+          this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has been picked by ${this.playCount} players. `+statMsg);
+        }
+        else if(statMsg === null){
+          this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has never been picked before`);
+        }
+        else{
+          this.logger.error(`Database Error while trying to get map stats`);
+        }
+      }
+    }
     if (player.isAuthorized) {
       this.processOwnerCommand(command, param);
     }

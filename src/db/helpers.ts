@@ -1,5 +1,5 @@
 import { Database } from 'sqlite';
-
+import { WebApiClient } from '../webapi/WebApiClient';
 export interface PickEntry {
     beatmapId: number;
     pickerId: number;
@@ -59,3 +59,60 @@ export async function hasPlayerPickedMap(dbClient: Database, beatmapId: number, 
     }
     return result.count > 0;
 }
+
+export async function getMapStats(db: Database, beatmapId: number): Promise<string | null>{
+    try{
+        const query = `
+        SELECT PICKER_ID, PICK_DATE
+        FROM PICKS
+        WHERE BEATMAP_ID = ?
+        ORDER BY PICK_DATE DESC
+        LIMIT 1;
+      `;
+      const result = await db.get(query, [beatmapId]);
+      if(!result) return null;
+      let name = "";
+      if (result.PICKER_ID == 0) 
+        name = "anonymous";
+      else{
+        const user = await WebApiClient.getUser(result.PICKER_ID);
+        if (user)
+            name = user.username;
+        else
+            name = "anonymous";
+      }
+      const pickDate = new Date(result.PICK_DATE * 1000);
+      const msMsg = `Previously picked by [https://osu.ppy.sh/users/${result.PICKER_ID} ${name}] ${timeAgo(pickDate.toISOString())}`;
+      return msMsg;
+    } catch (error) {
+        return "";
+    }
+}
+
+export function timeAgo(createdAt: string): string {
+    const createdDate = new Date(createdAt);
+    const now = Date.now();
+    const diffInMs = now - createdDate.getTime();
+
+    const seconds = Math.floor(diffInMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+
+    if (years > 0) {
+        return `${years} years ago`;
+    } else if (months > 0) {
+        return `${months} months ago`;
+    } else if (days > 0) {
+        return `${days} days ago`;
+    } else if (hours > 0) {
+        return `${hours} hours ago`;
+    } else if (minutes > 0) {
+        return `${minutes} minutes ago`;
+    } else {
+        return `${seconds} seconds ago`;
+    }
+}
+

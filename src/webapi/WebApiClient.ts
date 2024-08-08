@@ -291,7 +291,7 @@ class WebApiClientClass {
     return data;
   }
 
-  async getRecentScores(userId: number): Promise<UserScore> {
+  async getRecentScores(userId: number): Promise<UserScore[]> {
     const data = await this.accessApi(`https://osu.ppy.sh/api/v2/users/${userId}/scores/recent?include_fails=1`, {
       method: 'GET'
     });
