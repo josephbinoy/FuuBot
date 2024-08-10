@@ -84,11 +84,13 @@ export class ProfileFetcher extends LobbyPlugin {
     if(this.option.allow_players_pp[1]){
       if (profile.statistics.pp < this.option.allow_players_pp[0]) {
         this.lobby.SendMessage(`!mp ban ${escapeUserName(profile.username)}`);
+        this.lobby.SendMessageWithCoolTime(`smol pp detected (<${this.option.allow_players_pp[0]}pp)`, 'smol_pp', 60000);
         this.lobby.SendPrivateMessage(this.option.under_range_msg, escapeUserName(profile.username));
         return true;
       }
       else if(profile.statistics.pp > this.option.allow_players_pp[1]){
         this.lobby.SendMessage(`!mp ban ${escapeUserName(profile.username)}`);
+        this.lobby.SendMessageWithCoolTime(`mega pp detected (>${this.option.allow_players_pp[1]}pp)`, 'big_pp', 60000);
         this.lobby.SendPrivateMessage(this.option.over_range_msg, escapeUserName(profile.username));
         return true;
       }

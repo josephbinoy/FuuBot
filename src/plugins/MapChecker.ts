@@ -26,7 +26,7 @@ export type MapCheckerOption = {
       ar: [number, number],
       bpm: [number, number],
       cs: [number, number],
-      play_count: [number, number],
+      play_count_yearly_average: [number, number],
       stamina_formula_c_value: number,
       year: [number, number],
       languages: string[],
@@ -189,8 +189,10 @@ export class MapChecker extends LobbyPlugin {
             this.picksBuffer.clear();
             this.bufferCount.clear();
             this.lobby.lastDbUpdateTime = Date.now();
-            this.logger.info('Deleting old picks');
-            await deleteOldPicks(this.lobby.dbClient, this.option.dynamic_overplayed_map_checker.picks_delete_time_period);
+            if(this.option.dynamic_overplayed_map_checker.picks_delete_time_period!==""){
+              this.logger.info('Deleting old picks');
+              await deleteOldPicks(this.lobby.dbClient, this.option.dynamic_overplayed_map_checker.picks_delete_time_period);
+            }
           }
       } catch (error) {
           this.logger.error('@MapChecker#databaseOperations'+error);
@@ -583,7 +585,7 @@ export class MapChecker extends LobbyPlugin {
         this.playCount = await getCount(this.lobby.dbClient, map.beatmapset_id);
         this.playCount += this.bufferCount.get(map.beatmapset_id)?.size || 0;
         if(this.playCount > this.option.dynamic_overplayed_map_checker.pick_count_limit){
-          this.rejectMap(`This beatmapset is overplayed! (Played ${this.playCount} times)`, false);
+          this.rejectMap(`This beatmapset is overplayed! (Played ${this.playCount} times${this.option.dynamic_overplayed_map_checker.picks_delete_time_period ? ` in the last ${this.option.dynamic_overplayed_map_checker.picks_delete_time_period}` : ''})`, false)
           return;
         }
         const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
@@ -945,9 +947,9 @@ export class MapValidator {
       if(desc) desc+=" | "
       desc += `Years: ${this.option.advanced_filters.year[0]}–${this.option.advanced_filters.year[1]}`;
     }
-    if(this.option.advanced_filters.play_count[1]){
+    if(this.option.advanced_filters.play_count_yearly_average[1]){
       if(desc) desc+=" | "
-      desc += `Playcount: ${this.option.advanced_filters.play_count[0]}–${this.option.advanced_filters.play_count[1]}`;
+      desc += `Yearly Playcount: ${this.option.advanced_filters.play_count_yearly_average[0]}–${this.option.advanced_filters.play_count_yearly_average[1]}`;
     }
     if(this.option.advanced_filters.stamina_formula_c_value){
       if(desc) desc+="\n";
@@ -1050,11 +1052,15 @@ export class MapValidator {
 
   miscFiltering(map: Beatmap, hit_length: number): string {
     //playcount
-    if(this.option.advanced_filters.play_count[1]){
-      if (map.playcount < this.option.advanced_filters.play_count[0])
-        return "the beatmap has too few plays";
-      if (map.playcount > this.option.advanced_filters.play_count[1])
-        return "the beatmap has too many plays";
+    if(this.option.advanced_filters.play_count_yearly_average[1]){
+      const currentYear = new Date().getFullYear();
+      const beatmapYear = map.beatmapset?.submitted_date ? new Date(map.beatmapset.submitted_date).getFullYear() : 0;
+      const yearsSinceSubmission = (currentYear===beatmapYear)?1:currentYear - beatmapYear;
+      const avg_playcount = Math.round(map.playcount/yearsSinceSubmission);
+      if (avg_playcount < this.option.advanced_filters.play_count_yearly_average[0])
+        return `the beatmap has too few plays (${avg_playcount} per year)`;
+      if (avg_playcount > this.option.advanced_filters.play_count_yearly_average[1])
+        return `the beatmap has too many plays (${avg_playcount} per year)`;
     }
     //stamina_score
     if(this.option.advanced_filters.stamina_formula_c_value){
