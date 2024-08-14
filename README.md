@@ -1,22 +1,56 @@
 
 # FuuBot: An AI powered, robust Auto Host Rotation bot for [osu!](https://osu.ppy.sh/home) multiplayer based on Meowhal's [original bot](https://github.com/Meowhal/osu-ahr)
 Also referred matte-ek's [bot](https://github.com/matte-ek/BanchoMultiplayerBot)
-## Are you tired of 
-- Overplayed maps like Sound Chimera, Glory Days or obnoxious rap/phonk maps
-- AFK hosts, chat spammers
-- That guy who always puts dt global
-- Dead lobbies were nobody says anything?
-## Say no more. FuuBot is here. Find the regular features [here](#Features)
-
+## Find the regular features [here](#Features)
 ## Features I added:
 - Regulation Check for Difficulty changing mods like DT, HR.
 - An LLM based Q&A Bot to answer any questions about osu or help with the bot commands. Use with !ask
-- Use !timeleft to see how much time is left for current match to end
-- (Upcoming) Spam kicker kicks out players that spam chat 
 - Match Summarisation at the end of every match that highlights the winner, FCs, highest acc player and more.
-- Only Japanese/Instrumental maps allowed. Can be overridden with !force.
-- Banned overplayed maps. I referred this [list](https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml) (Credit to matte-ek's [reddit post](https://www.reddit.com/r/osugame/comments/xkb4qu/maps_that_people_pick_in_auto_host_rotate/)).
+- Blacklist any map by adding map name or id in the blacklist file. Currently it uses matte-ek's overplayed map[list](https://docs.google.com/spreadsheets/d/e/2PACX-1vT9WE--RDB2eSs1PpjhxXrifto_J2O-I-FrSGix3iyaJpDfFsI_CJt1rq8RqQssBQzZLVeQw9tceoqW/pubhtml)
+- pp based player entry. Players with pp below or above a certain range are not allowed to enter the lobby. Kicked players will be notified via PM. These can be set in the config file.
+- Enforces maps from the Default Map List whenever the lobby is empty. Can be be set in the Default Map List file.
+- Users in Authorized Users list are added as referees whenever they join.
 
+### Extra Commands
+- Use !timeleft to see how much time is left for current match to end
+- Use !skills <username> to get a visualisation of your skills (provided by [osuskills](https://osuskills.com/)). In addition it will also show various stats like average combo, bpm, favorite mods etc.
+- Use !ms to get pick information about current mapset.
+- Use !rs to get inforamtion about the user's most recent play.
+
+### Advanced Filters
+Filter out maps based on various parameters. Can be set in the config file.
+- od
+- ar
+- cs
+- bpm
+- playcount
+- stamina more info here
+- year
+- language
+- genre
+- status
+- tags
+- artists
+- mappers
+- nsfw
+
+### Dynamic Overplayed Maps Filtering
+Whenever a map is picked, mapset info is stored in the local database. If the mapset is picked more often than specified limit, it will be rejected. The database clears entries that are older than certain time period. These values can be configured in the config file.
+
+DB path to be specified in the config file.
+
+### Stamina Filering
+Stamina of a map is defined by the number of taps per second it requires. The bot calculates the stamina of a map and filters out maps that require more stamina than specified limit.
+
+Stamina = (circle_count + slider_count + spinner_count) / (hit_length/60)
+
+Stamina Limit is calculated using the following formulae:
+For less than 2 min: 
+Stamina limit = 0.8*C/L+0.6*C
+For more than 2 min:
+Stamina limit = 0.8*C/(L-12)+1.08*C
+
+Where C is a constant that can be specified in the config file and L is the length of the map in seconds.
 
 ## Features I removed:
 - Completely Removed Discord integration as I'm using a Raspberry Pi 4 to run the bot 24/7 (not headless)
@@ -34,6 +68,9 @@ Also referred matte-ek's [bot](https://github.com/matte-ek/BanchoMultiplayerBot)
 |:--|:--|
 |`!ask <question>`| Ask the bot any question. It can be about the lobby or osu in general.|
 |`!timeleft`| Shows how much time is left for current match to end. |
+|`!skills <username>`| Shows a visualisation of your skills along with player stats.|
+|`!ms`| Shows pick information about current mapset.|
+|`!rs`| Shows information about the user's most recent play.|
 |`!q or !queue`| Shows host queue.|
 |`!skip`| Triggers vote to skip current host.|
 |`!start`| Triggers vote start the match.|
@@ -52,7 +89,7 @@ Also referred matte-ek's [bot](https://github.com/matte-ek/BanchoMultiplayerBot)
 |`!start [seconds]`| Starts the match after a set time in seconds.|`!start 30`|
 |`!stop`| Stops active start timer.||
 |`!abort`| Aborts the currently running match.||
-|`!force`| Override detection and force pick any map within regulation. Maximum 3 chances.||
+|`!force`| Override detection and force pick any map within regulation. Maximum 5 chances.||
 
 ## Administrator Commands
 
@@ -136,18 +173,14 @@ Cli
 
 ```text
 > npm start     (Note: To enable logging of word counter and api calls, include the --verbose or -v flag)
-starting up...
-Connecting to Osu Bancho ...
-Connected :D
-
-=== Welcome to FuuBot Menu ===
-
-MainMenu Commands
-  [make <Lobby_name>] Make a lobby.  e.g. 'make 5* auto host rotation'
-  [enter <LobbyID>]   Enter the lobby. e.g. 'enter 123456' (It only works if you are a referee in the lobby).
-  [help] Show this message.
-  [quit] Quit the application.
-
+pre - Starting up...
+cli - Connecting to osu!Bancho...
+lobby - Database client initialized
+askbot - Model initialized
+cli - Connected. :D
+> Auto making lobby in 20 seconds... Type 'stop' to cancel.
+stop
+Lobby auto make cancelled.
 > make 5-6* | auto host rotation
 ```
 

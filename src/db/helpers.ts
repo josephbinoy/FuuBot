@@ -5,16 +5,45 @@ export interface PickEntry {
     pickerId: number;
     pickDate: number;
   }
+export interface MapCount {
+    weekly_count:number,
+    total_count:number
+}
 
 export async function getCount(db: Database, beatmapId: number): Promise<number> {
     let result;
     try{
-        result = await db.get('SELECT COUNT(BEATMAP_ID) AS count FROM PICKS WHERE BEATMAP_ID = ?', [beatmapId]);
+        result = await db.get('SELECT COUNT(*) AS count FROM PICKS WHERE BEATMAP_ID = ?', [beatmapId]);
     }
     catch (error){
         return 0;
     }
     return result.count;
+}
+
+export async function getWeeklyAndAlltimeCount(db: Database, beatmapId: number): Promise<MapCount> {
+    let result: MapCount = {
+        weekly_count: 0,
+        total_count: 0
+    };
+    const query=`
+        SELECT
+        COUNT(*) AS total_count,
+        SUM(CASE WHEN pick_date >= (strftime('%s', 'now') - 7 * 86400) THEN 1 ELSE 0 END) AS weekly_count
+        FROM picks
+        WHERE beatmapid = ?;
+        `
+    try {
+        const res = await db.get(query, [beatmapId]);
+        if (res) {
+            result.weekly_count=res.weekly_count ?? 0,
+            result.total_count=res.total_count ?? 0 
+        } 
+        return result;
+    } 
+    catch (error){
+        return result;
+    }
 }
 
 export async function insertPicks(db: Database, picksBuffer: Map<string, PickEntry>): Promise<void> {

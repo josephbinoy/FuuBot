@@ -585,7 +585,7 @@ export class MapChecker extends LobbyPlugin {
         this.playCount = await getCount(this.lobby.dbClient, map.beatmapset_id);
         this.playCount += this.bufferCount.get(map.beatmapset_id)?.size || 0;
         if(this.playCount > this.option.dynamic_overplayed_map_checker.pick_count_limit){
-          this.rejectMap(`This beatmapset is overplayed! (Played ${this.playCount} times${this.option.dynamic_overplayed_map_checker.picks_delete_time_period ? ` in the last ${this.option.dynamic_overplayed_map_checker.picks_delete_time_period}` : ''})`, false)
+          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.playCount} players${this.option.dynamic_overplayed_map_checker.picks_delete_time_period ? ` in the last ${this.option.dynamic_overplayed_map_checker.picks_delete_time_period}` : ''})`, false)
           return;
         }
         const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
@@ -996,12 +996,12 @@ export class MapValidator {
         if (map.beatmapset?.creator) {
           let mapperLower=map.beatmapset?.creator.toLowerCase();
           if (mappers.includes(mapperLower)){
-            return `beatmapsets by this mapper are not allowed in the lobby`;
+            return `this mapper was found in the [https://osu-pps.com/#/osu/mappers/pp pp mappers list]`;
           }
         }
         let diffMapper=map.version.toLowerCase();
         if(mappers.some(mapper => diffMapper.includes(mapper))){
-          return `beatmaps by this mapper are not allowed in the lobby`;
+          return `this mapper was found in the [https://osu-pps.com/#/osu/mappers/pp pp mappers list]`;
         }
       }
   

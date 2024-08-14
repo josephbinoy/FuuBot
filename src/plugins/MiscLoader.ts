@@ -75,7 +75,7 @@ export class MiscLoader extends LobbyPlugin {
         return;
       }
       const rs = recentScores[0];
-      const rsMsg = `${player.name}'s recent score is a ${rs.rank} rank ${(rs.accuracy*100).toFixed(2)}% on [https://osu.ppy.sh/b/${rs.beatmap.id} ${rs.beatmapset.title.substring(0, 15)}... [${rs.beatmap.version}]]${rs.mods.length>0?` with ${rs.mods.join("") }`:" "}worth ${rs.pp?Math.round(rs.pp):0}pp! (Updated ${timeAgo(rs.created_at)})`;
+      const rsMsg = `${player.name}'s recent score is a ${rs.rank} rank ${(rs.accuracy*100).toFixed(2)}% on [https://osu.ppy.sh/b/${rs.beatmap.id} ${rs.beatmapset.title.substring(0, 15)}... [${rs.beatmap.version}]]${rs.mods.length>0?` with ${rs.mods.join("")} `:" "}worth ${rs.pp?Math.round(rs.pp):0}pp! (Updated ${timeAgo(rs.created_at)})`;
       this.lobby.SendMessage(rsMsg);
     } catch (e: any) {
       this.logger.error(`@MiscLoader#handleRecentScoreCommand: There was an error while fetching recent scores for ${player.escaped_name}\n${e.message}\n${e.stack}`);
