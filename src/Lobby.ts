@@ -139,8 +139,20 @@ export class Lobby {
       registered: async () => {
         if (this.status === LobbyStatus.Entered && this.channel) {
           this.logger.warn('Detected a network reconnection! Loading multiplayer settings...');
-          if(this.lobbyId) await this.EnterLobbyAsync(this.lobbyId);
-          this.LoadMpSettingsAsync();
+          if(this.lobbyId) {
+            try {
+              await this.EnterLobbyAsync(this.lobbyId);
+              this.LoadMpSettings();
+            }
+            catch(e: any) {
+              this.logger.info(`No such channel (Lobby closed by Bancho). Proceeding to quit and make new lobby:\n${e}`);
+              try {
+                await this.QuitLobbyAsync();
+              } catch (quitError: any) {
+                this.logger.error(`Failed to quit the lobby:\n${quitError}`);
+              }
+            }
+          } 
         }
       },
       pm: (nick: any, message: any) => {
@@ -329,7 +341,7 @@ export class Lobby {
     this.logger.warn('!mp host timeout');
     if (this.hostPending) {
       if (this.players.has(this.hostPending)) {
-        this.LoadMpSettingsAsync();
+        this.LoadMpSettings();
       }
       this.hostPending = null;
     }
@@ -616,7 +628,7 @@ export class Lobby {
     if (this.addPlayer(player, slot, team)) {
       this.PlayerJoined.emit({ player, slot, team, fromMpSettings: false });
     } else {
-      this.LoadMpSettingsAsync();
+      this.LoadMpSettings();
     }
   }
 
@@ -626,7 +638,7 @@ export class Lobby {
     if (this.removePlayer(player)) {
       this.PlayerLeft.emit({ player, fromMpSettings: false, slot });
     } else {
-      this.LoadMpSettingsAsync();
+      this.LoadMpSettings();
     }
   }
 
@@ -644,7 +656,7 @@ export class Lobby {
     if (this.setAsHost(player)) {
       this.HostChanged.emit({ player });
     } else {
-      this.LoadMpSettingsAsync();
+      this.LoadMpSettings();
     }
   }
 
@@ -662,7 +674,7 @@ export class Lobby {
     this.PlayerFinished.emit({ player, score, isPassed, playersFinished: sc.finished, playersInGame: sc.inGame });
     if (!this.players.has(player)) {
       this.logger.warn(`A player that did not participate finished a match: ${username}`);
-      this.LoadMpSettingsAsync();
+      this.LoadMpSettings();
     }
   }
 
@@ -856,16 +868,16 @@ export class Lobby {
     });
   }
 
-  LoadMpSettingsAsync(): void {
+  LoadMpSettings(): void {
     if (this.status !== LobbyStatus.Entered) {
-      this.logger.error('@loadMpSettingsAsync: Invalid lobby status');
+      this.logger.error('@loadMpSettings: Invalid lobby status');
       return
     }
     if (this.SendMessageWithCoolTime('!mp settings', 'mpsettings', 15000)) {
       this.logger.trace('Loading multiplayer settings...');
-    } else {
+    } 
+    else {
       this.logger.trace('Multiplayer settings loading process has been skipped due to cooltime.');
-      return;
     }
   }
 
