@@ -331,9 +331,7 @@ export class LobbyKeeper extends LobbyPlugin {
       this.fixLobbyModeAndSize();
     }
     if (this.option.title !== null || this.option.mode !== null || this.option.mods !== null) {
-      this.lobby.LoadMpSettingsAsync().catch((e: any) => {
-        this.logger.error(`LobbyKeeper#onMatchFinished\nFailed to loadMpSettingsAsync\n${e}`);
-      });
+      this.lobby.LoadMpSettingsAsync();
     }
   }
 

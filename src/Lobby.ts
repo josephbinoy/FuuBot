@@ -140,7 +140,7 @@ export class Lobby {
         if (this.status === LobbyStatus.Entered && this.channel) {
           this.logger.warn('Detected a network reconnection! Loading multiplayer settings...');
           if(this.lobbyId) await this.EnterLobbyAsync(this.lobbyId);
-          await this.LoadMpSettingsAsync();
+          this.LoadMpSettingsAsync();
         }
       },
       pm: (nick: any, message: any) => {
@@ -856,23 +856,16 @@ export class Lobby {
     });
   }
 
-  LoadMpSettingsAsync(): Promise<void> {
+  LoadMpSettingsAsync(): void {
     if (this.status !== LobbyStatus.Entered) {
-      return Promise.reject('@loadMpSettingsAsync: Invalid lobby status');
+      this.logger.error('@loadMpSettingsAsync: Invalid lobby status');
+      return
     }
     if (this.SendMessageWithCoolTime('!mp settings', 'mpsettings', 15000)) {
       this.logger.trace('Loading multiplayer settings...');
-      const p = new Promise<void>(resolve => {
-        this.FixedSettings.once(() => {
-          this.SendMessage('!mp listrefs');
-          this.logger.trace('Successfully loaded multiplayer settings.');
-          resolve();
-        });
-      });
-      return p;
     } else {
       this.logger.trace('Multiplayer settings loading process has been skipped due to cooltime.');
-      return Promise.resolve();
+      return;
     }
   }
 
