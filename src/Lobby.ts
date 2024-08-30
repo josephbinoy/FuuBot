@@ -860,7 +860,8 @@ export class Lobby {
         resolve();
       });
       if (this.channel) {
-        this.ircClient.part(this.channel, 'part', () => { /* do nothing. */ });
+        // this.ircClient.part(this.channel, 'part', () => { /* do nothing. */ });
+        this.ircClient.emit('part');
         this.status = LobbyStatus.Leaving;
       } else {
         reject();

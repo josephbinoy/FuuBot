@@ -6,8 +6,8 @@ export interface PickEntry {
     pickDate: number;
   }
 export interface MapCount {
-    weekly_count:number,
-    total_count:number
+    weeklyCount: number,
+    alltimeCount :number
 }
 
 export async function getCount(db: Database, beatmapId: number): Promise<number> {
@@ -23,21 +23,21 @@ export async function getCount(db: Database, beatmapId: number): Promise<number>
 
 export async function getWeeklyAndAlltimeCount(db: Database, beatmapId: number): Promise<MapCount> {
     let result: MapCount = {
-        weekly_count: 0,
-        total_count: 0
+        weeklyCount: 0,
+        alltimeCount: 0
     };
     const query=`
         SELECT
         COUNT(*) AS total_count,
         SUM(CASE WHEN pick_date >= (strftime('%s', 'now') - 7 * 86400) THEN 1 ELSE 0 END) AS weekly_count
         FROM picks
-        WHERE beatmapid = ?;
+        WHERE BEATMAP_ID = ?;
         `
     try {
         const res = await db.get(query, [beatmapId]);
         if (res) {
-            result.weekly_count=res.weekly_count ?? 0,
-            result.total_count=res.total_count ?? 0 
+            result.weeklyCount=res.weekly_count ?? 0,
+            result.alltimeCount=res.total_count ?? 0 
         } 
         return result;
     } 

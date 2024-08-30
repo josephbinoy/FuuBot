@@ -280,6 +280,8 @@ export class OahrCli extends OahrBase {
         if (this.client.conn && !this.client.conn.requestedDisconnect) {
           this.client.disconnect('Goodbye.', async () => {
             logger.info('IRC client disconnected.');
+            await this.lobby.dbClient?.close();
+            logger.info('Database connection closed.');
             if (this.exited) {
               process.exit(0);
             }

@@ -467,3 +467,6 @@ Since this is a long time, and may cause problems for other users, the lobby wil
 If `close now` is issued in the console, the `!mp close` command will be sent and the lobby will be closed immediately.  
 If a number of seconds is specified as an argument, such as `close 30`, the lobby will wait until a password is set and for everyone to leave, then the lobby will close after the specified number of seconds has passed.
 If `close` is issued, the lobby will be closed after the password is set and everyone has left.
+
+# Future Ideas
+Allow players to vote to bring back rejected maps using the website

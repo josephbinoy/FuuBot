@@ -9,7 +9,7 @@ import { Beatmap, Beatmapset } from '../webapi/Beatmapsets';
 import { getConfig } from '../TypedConfig';
 import { Logger } from '../Loggers';
 import { WebApiClient } from '../webapi/WebApiClient';
-import { PickEntry, getCount, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo} from '../db/helpers';
+import { PickEntry, getWeeklyAndAlltimeCount, MapCount, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo} from '../db/helpers';
 import * as modCalc from '../helpers/modCalculator'
 import fs from 'fs';
 
@@ -17,7 +17,8 @@ export type MapCheckerOption = {
   enabled: boolean;
   dynamic_overplayed_map_checker:{
     enabled: boolean,
-    pick_count_limit: number,
+    pick_count_weekly_limit: number,
+    pick_count_alltime_limit: number,
     picks_delete_time_period: string
   },
   advanced_filters: {
@@ -96,7 +97,9 @@ export class MapChecker extends LobbyPlugin {
   activeMods: string=''
   picksBuffer: Map<string, PickEntry> = new Map<string, PickEntry>();
   operationQueue: OperationQueue = new OperationQueue();
-  playCount: number = 0;
+  weeklyCount: number = 0;
+  alltimeCount: number = 0;
+  lastInvokedListCommand: number = 0;
   bufferCount:Map<number, Set<number>> = new Map<number, Set<number>>();
   modAcronym: Record<string, string>= {
     'Easy': 'EZ',
@@ -229,7 +232,7 @@ export class MapChecker extends LobbyPlugin {
           break;
         case BanchoResponseType.AbortedMatch:
           if(this.option.enabled){
-            this.lobby.isValidMap = false;
+            this.lobby.isValidMap = true;
             this.lobby.rejectedWrongLang = false;
           }
           break;
@@ -464,7 +467,7 @@ export class MapChecker extends LobbyPlugin {
           statMsg = await getMapStats(this.lobby.dbClient, this.playingMap.beatmapset_id);
         }
         if(statMsg){
-          this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has been picked by ${this.playCount} players. `+statMsg);
+          this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has been picked by ${this.weeklyCount} players last week and ${this.alltimeCount} all time (${statMsg})`);
         }
         else if(statMsg === null){
           this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has never been picked before`);
@@ -475,8 +478,112 @@ export class MapChecker extends LobbyPlugin {
       }
     }
     if (player.isAuthorized) {
+      if (command === '*add'){
+        const currentTime = Date.now();
+        const params = param.split(/\s+/).map(s => s.toLowerCase()).filter(s => s !== '');
+        if(params[0] === 'black'){
+          if (currentTime - this.lastInvokedListCommand < 10000) {
+            this.lobby.SendPrivateMessageWithCoolTime(`The add command is on cooldown. Please wait ${Math.ceil((10000 - (currentTime - this.lastInvokedListCommand)) / 1000)} seconds`, player.escaped_name, 'add_warning', 5000);
+            return;
+          }
+          this.lastInvokedListCommand = currentTime;
+          this.addToBlacklist(player.escaped_name);
+        }
+        else if(params[0] === 'default'){
+          if (currentTime - this.lastInvokedListCommand < 10000) {
+            this.lobby.SendPrivateMessageWithCoolTime(`The add command is on cooldown. Please wait ${Math.ceil((10000 - (currentTime - this.lastInvokedListCommand)) / 1000)} seconds`, player.escaped_name, 'add_warning', 5000);
+            return;
+          }
+          this.lastInvokedListCommand = currentTime;
+          this.addToDefaultList(player.escaped_name);
+        }
+        return;
+      }
+      else if (command === '*remove'){
+        const currentTime = Date.now();
+        const params = param.split(/\s+/).map(s => s.toLowerCase()).filter(s => s !== '');
+        if(params[0] === 'black'){
+          if (currentTime - this.lastInvokedListCommand < 10000) {
+            this.lobby.SendPrivateMessageWithCoolTime(`The remove command is on cooldown. Please wait ${Math.ceil((10000 - (currentTime - this.lastInvokedListCommand)) / 1000)} seconds`, player.escaped_name, 'remove_warning', 5000);
+            return;
+          }
+          this.lastInvokedListCommand = currentTime;
+          this.removeFromBlacklist(player.escaped_name);
+        }
+        else if(params[0] === 'default'){
+          if (currentTime - this.lastInvokedListCommand < 10000) {
+            this.lobby.SendPrivateMessageWithCoolTime(`The remove command is on cooldown. Please wait ${Math.ceil((10000 - (currentTime - this.lastInvokedListCommand)) / 1000)} seconds`, player.escaped_name, 'remove_warning', 5000);
+            return;
+          }
+          this.lastInvokedListCommand = currentTime;
+          this.removeFromDefaultList(player.escaped_name);
+        }
+        return;
+      }
       this.processOwnerCommand(command, param);
     }
+  }
+
+  private addToBlacklist(ownerName: string) {
+    const mapsetId = this.playingMap?.beatmapset_id || 0;
+    if(mapsetId === 0) return;
+    const mapsetName = this.playingMap?.beatmapset?.title || '';
+    fs.appendFile('./maplists/blacklisted_mapset_ids.txt', `\n${mapsetId}`, (err) => {
+      if (err) {
+        this.logger.error(`Failed to add [https://osu.ppy.sh/beatmapsets/${mapsetId} ${mapsetName}] to blacklist`, err);
+      } else {
+        this.validator.blacklistedIds.push(mapsetId);
+        this.lobby.SendPrivateMessage(`[https://osu.ppy.sh/beatmapsets/${mapsetId} ${mapsetName}] has been added to blacklist`, ownerName);
+      }
+    });
+  }
+
+  private removeFromBlacklist(ownerName: string) {
+    const mapsetId = this.validator.blackedMap?.beatmapset_id || 0;
+    if(mapsetId === 0) return;
+    const mapsetName = this.validator.blackedMap?.beatmapset?.title || '';
+    const initialLength = this.validator.blacklistedIds.length;
+    this.validator.blacklistedIds = this.validator.blacklistedIds.filter(blacklistedId => blacklistedId !== mapsetId);
+    if(this.validator.blacklistedIds.length === initialLength) return;
+    fs.writeFile('./maplists/blacklisted_mapset_ids.txt', this.validator.blacklistedIds.join('\n'), (err) => {
+      if (err) {
+        this.logger.error(`Failed to remove [https://osu.ppy.sh/beatmapsets/${mapsetId} ${mapsetName}] from blacklist`, err);
+      } else {
+        this.lobby.SendPrivateMessage(`[https://osu.ppy.sh/beatmapsets/${mapsetId} ${mapsetName}] has been removed from blacklist`, ownerName);
+      }
+    });
+  }
+
+  private addToDefaultList(ownerName: string) {
+    const mapId = this.playingMap?.id || 0;
+    if(mapId === 0) return;
+    let  mapName = this.playingMap?.beatmapset?.title || '';
+    mapName += ` [${this.playingMap?.version || ''}]`;
+    fs.appendFile('./maplists/default_map_ids.txt', `\n${mapId}`, (err) => {
+      if (err) {
+        this.logger.error(`Failed to add [https://osu.ppy.sh/b/${mapId} ${mapName}] to default list`, err);
+      } else {
+        this.defaultIds.push(mapId);
+        this.lobby.SendPrivateMessage(`[https://osu.ppy.sh/b/${mapId} ${mapName}] has been added to default list.`, ownerName);
+      }
+    });
+  }
+
+  private removeFromDefaultList(ownerName: string) {
+    const mapId = this.playingMap?.id || 0;
+    if(mapId === 0) return;
+    let mapName = this.playingMap?.beatmapset?.title || '';
+    mapName += ` [${this.playingMap?.version || ''}]`;
+    const initialLength = this.defaultIds.length;
+    this.defaultIds = this.defaultIds.filter(defaultId => defaultId !== mapId);
+    if(this.defaultIds.length === initialLength) return;
+    fs.writeFile('./maplists/default_map_ids.txt', this.defaultIds.join('\n'), (err) => {
+      if (err) {
+        this.logger.error(`Failed to remove [https://osu.ppy.sh/b/${mapId} ${mapName}] from default list`, err);
+      } else {
+        this.lobby.SendPrivateMessage(`[https://osu.ppy.sh/b/${mapId} ${mapName}] has been removed from default list`, ownerName);
+      }
+    });
   }
 
   processOwnerCommand(command: string, param: string) {
@@ -582,10 +689,16 @@ export class MapChecker extends LobbyPlugin {
     try {
       const map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
       if (this.option.dynamic_overplayed_map_checker.enabled && this.lobby.dbClient){
-        this.playCount = await getCount(this.lobby.dbClient, map.beatmapset_id);
-        this.playCount += this.bufferCount.get(map.beatmapset_id)?.size || 0;
-        if(this.playCount > this.option.dynamic_overplayed_map_checker.pick_count_limit){
-          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.playCount} players${this.option.dynamic_overplayed_map_checker.picks_delete_time_period ? ` in the last ${this.option.dynamic_overplayed_map_checker.picks_delete_time_period}` : ''})`, false)
+        let { weeklyCount, alltimeCount } = await getWeeklyAndAlltimeCount(this.lobby.dbClient, map.beatmapset_id);
+        const curBufferCount = this.bufferCount.get(map.beatmapset_id)?.size || 0;
+        this.weeklyCount = weeklyCount + curBufferCount;
+        this.alltimeCount = alltimeCount + curBufferCount;
+        if(this.alltimeCount > this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit){
+          this.rejectMap(`This beatmapset is overplayed! [https://osu.mineapple.net/fuubot/ (Picked by ${this.alltimeCount} players all time)]`, false)
+          return;
+        }
+        if(this.weeklyCount > this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit){
+          this.rejectMap(`Weekly quota for this map has been reached (Picked by ${this.weeklyCount} players last week)`, false)
           return;
         }
         const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
@@ -770,7 +883,7 @@ export class MapChecker extends LobbyPlugin {
     desc = desc.replace(/\$\{cs\}/g, Number.isInteger(attributes.cs) ? attributes.cs.toString() : attributes.cs.toFixed(1));
     desc = desc.replace(/\$\{stamina\}/g, cps.toFixed(2));
     desc = desc.replace(/\$\{csr\}/g, csr);
-    desc = desc.replace(/\$\{play_count\}/g, (this.playCount==0)?'Never picked':`${this.playCount.toString()} times`); 
+    desc = desc.replace(/\$\{play_count\}/g, `${this.weeklyCount.toString()} times last week`); 
     return desc;
   }
 
@@ -791,6 +904,7 @@ export class MapValidator {
   option: MapCheckerOption;
   blacklistedIds: number[]=[];
   blacklistedNames: string[]=[];
+  blackedMap: Beatmap | undefined=undefined;
   lobbyInstance: Lobby;
   //TODO: Create own type for languages and genres!!
   // languages: string[] = ['English', 'Chinese', 'French', 'German', 'Italian', 'Japanese', 'Korean', 'Spanish', 'Swedish', 'Russian', 'Polish', 'Instrumental', 'Unspecified', 'Other'];
@@ -870,6 +984,7 @@ export class MapValidator {
 
     else if(this.blacklistedIds.includes(map.beatmapset_id) || this.blacklistedNames.includes(map.beatmapset?.title || '')){
       rate=69;
+      this.blackedMap = map;
       violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map';
     }
 
