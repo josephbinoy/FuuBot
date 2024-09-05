@@ -693,12 +693,12 @@ export class MapChecker extends LobbyPlugin {
         const curBufferCount = this.bufferCount.get(map.beatmapset_id)?.size || 0;
         this.weeklyCount = weeklyCount + curBufferCount;
         this.alltimeCount = alltimeCount + curBufferCount;
-        if(this.alltimeCount > this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit){
-          this.rejectMap(`This beatmapset is overplayed! [https://osu.mineapple.net/fuubot/ (Picked by ${this.alltimeCount} players all time)]`, false)
+        if(this.alltimeCount >= this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit){
+          this.rejectMap(`This beatmapset is overplayed! [https://fuubot.mineapple.net/ (Picked by ${this.alltimeCount} players all time)]`, false)
           return;
         }
-        if(this.weeklyCount > this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit){
-          this.rejectMap(`Weekly quota for this map has been reached (Picked by ${this.weeklyCount} players past week)`, false)
+        if(this.weeklyCount >= this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit){
+          this.rejectMap(`Weekly quota for this map has been reached! [https://fuubot.mineapple.net/ (Picked by ${this.weeklyCount} players past week)]`, false)
           return;
         }
         const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
