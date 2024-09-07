@@ -10,7 +10,7 @@ import { applySpeedLimit } from '../libs/ChatLimiter';
 const logger = getLogger('pre');
 logger.info('Starting up...');
 
-export function createIrcClient() {
+export function createIrcClient(onStart: boolean) {
   try {
     CONFIG_OPTION.USE_ENV = true;
     const c = getIrcConfig();
@@ -41,7 +41,7 @@ export function createIrcClient() {
       const arg = process.argv.slice(3).join(' ');
       oahr.start(command, arg);
     } else {
-      const oahr = new OahrCli(client);
+      const oahr = new OahrCli(client, onStart);
       oahr.start(null);
     }
   } catch (e: any) {
@@ -50,4 +50,4 @@ export function createIrcClient() {
   }
 }
 
-createIrcClient();
+createIrcClient(true);

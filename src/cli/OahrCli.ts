@@ -7,6 +7,7 @@ import { OahrBase } from './OahrBase';
 import { LobbyKeeperOption, } from '../plugins/LobbyKeeper';
 import { ConfigTypeHint, getConfig } from '../TypedConfig';
 import { createIrcClient } from './index';
+import fs from 'fs';
 
 const logger = getLogger('cli');
 
@@ -51,10 +52,12 @@ const OPTION_TYPE_HINTS: ConfigTypeHint[] = [
 export class OahrCli extends OahrBase {
   private scene: Scene;
   private lobbyopts: LobbyKeeperOption;
+  private onStart: boolean = false;
 
-  constructor(client: IIrcClient, option: Partial<LobbyKeeperOption> = {}) {
+  constructor(client: IIrcClient, onStart: boolean, option: Partial<LobbyKeeperOption> = {}) {
     super(client);
     this.scene = this.scenes.mainMenu;
+    this.onStart = onStart;
     this.lobbyopts = getConfig('LobbyKeeper', option, OPTION_TYPE_HINTS) as LobbyKeeperOption;    
   }
 
@@ -64,7 +67,7 @@ export class OahrCli extends OahrBase {
       prompt: '> ',
       action: async (line: string) => {
         const l = parser.SplitCliCommand(line);
-        switch (l.command) {
+        switch (l.command.toLowerCase()) {
           case 'm':
           case 'make':
             if (l.arg === '') {
@@ -91,7 +94,7 @@ export class OahrCli extends OahrBase {
                 logger.info('Enter command needs a lobby ID, e.g., \'enter 123456\'');
                 return;
               }
-              await this.enterLobbyAsync(l.arg);
+              await this.enterLobbyAsync(l.arg, false);
               this.transitionToLobbyMenu();
             } catch (e: any) {
               logger.info(`Invalid channel:\n${e}`);
@@ -134,7 +137,7 @@ export class OahrCli extends OahrBase {
           this.scene = this.scenes.exited;
           return;
         }
-        switch (l.command) {
+        switch (l.command.toLowerCase()) {
           case 's':
           case 'say':
             if ((l.arg.startsWith('!') && !l.arg.startsWith('!mp ')) || l.arg.startsWith('*')) {
@@ -242,12 +245,27 @@ export class OahrCli extends OahrBase {
       logger.info('Connected. :D');
       r.setPrompt(this.prompt);
       r.prompt();
-      console.log('Auto making lobby in 20 seconds... Type \'stop\' to cancel.');
-      // Store the timer ID
-      lobbyTimer = setTimeout(async () => {
-        await this.makeLobbyAsync(this.lobbyopts.title || '__');
-        this.transitionToLobbyMenu();
-      }, 20000); // 20 seconds delay
+      if(this.onStart){
+        console.log('Trying to enter previous lobby in 20 seconds... Type \'stop\' to cancel');
+        lobbyTimer = setTimeout(async () => {
+          try {
+            const lobbyId = getPreviousLobbyId();
+            await this.enterLobbyAsync(lobbyId.toString(), true);
+            this.transitionToLobbyMenu();
+          } catch (e: any) {
+            logger.info(`Lobby doesn't exist. Proceeding to make new lobby`);
+            await this.makeLobbyAsync(this.lobbyopts.title || '__');
+            this.transitionToLobbyMenu();
+          }
+        }, 20000);
+      }
+      else{
+        console.log('Auto making lobby in 20 seconds... Type \'stop\' to cancel.');
+        lobbyTimer = setTimeout(async () => {
+          await this.makeLobbyAsync(this.lobbyopts.title || '__');
+          this.transitionToLobbyMenu();
+        }, 20000);
+      }
     });
     this.client.once('part', () => {
       r.close();
@@ -257,9 +275,9 @@ export class OahrCli extends OahrBase {
       logger.trace(`Scene: ${this.scene.name}, Line: ${line}`);
       if (line.trim().toLowerCase() === 'stop') {
         if (lobbyTimer !== null) {
-          clearTimeout(lobbyTimer); // Cancel the timer
-          console.log('Lobby auto make cancelled.');
-          lobbyTimer = null; // Reset the timer variable
+          clearTimeout(lobbyTimer);
+          console.log('Lobby enter/automake cancelled.');
+          lobbyTimer = null;
         }
       } 
       else {
@@ -286,7 +304,7 @@ export class OahrCli extends OahrBase {
               process.exit(0);
             }
             else {
-              createIrcClient();
+              createIrcClient(false);
             }
           });
         } else {
@@ -300,5 +318,25 @@ export class OahrCli extends OahrBase {
   transitionToLobbyMenu() {
     this.scene = this.scenes.lobbyMenu;
     this.scene.prompt = `${this.lobby.channel || ''} > `;
+  }
+}
+
+function getPreviousLobbyId(): number {
+  const logsFolderPath = './logs/channels';
+  try {
+    const files = fs.readdirSync(logsFolderPath);
+    const lobbyIDs = files.filter(file => /^\d+\.log$/.test(file))
+      .map(file => parseInt(file.replace('.log', ''), 10))
+      .filter(id => !isNaN(id));
+
+    if (lobbyIDs.length === 0) {
+      return 0;
+    }
+
+    const highestLobbyID = Math.max(...lobbyIDs);
+    return highestLobbyID;
+  } catch (error) {
+    console.error('Error reading logs folder:', error);
+    return 0;
   }
 }

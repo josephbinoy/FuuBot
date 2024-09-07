@@ -21,7 +21,7 @@ export class OahrHeadless extends OahrBase {
           this.makeLobbyAsync(arg);
           break;
         case 'e':
-          this.enterLobbyAsync(arg);
+          this.enterLobbyAsync(arg, false);
           break;
         default:
           process.exit(1);

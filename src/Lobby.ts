@@ -141,7 +141,7 @@ export class Lobby {
           this.logger.warn('Detected a network reconnection! Loading multiplayer settings...');
           if(this.lobbyId) {
             try {
-              await this.EnterLobbyAsync(this.lobbyId);
+              await this.EnterLobbyAsync(this.lobbyId, false);
               this.LoadMpSettings();
             }
             catch(e: any) {
@@ -799,7 +799,7 @@ export class Lobby {
     });
   }
 
-  EnterLobbyAsync(channel: string): Promise<string> {
+  EnterLobbyAsync(channel: string, onStart: boolean): Promise<string> {
     this.logger.trace('Entering a lobby...');
     return new Promise<string>((resolve, reject) => {
       const ch = parser.EnsureMpChannelId(channel);
@@ -821,7 +821,8 @@ export class Lobby {
       };
       const errhandler = (message: any) => {
         this.ircClient.off('join', joinhandler);
-        this.destroy();
+        if (!onStart)
+          this.destroy();
         reject(`${message.args[2]}`);
       };
       this.ircClient.once('error', errhandler);
