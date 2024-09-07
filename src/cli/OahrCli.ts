@@ -246,7 +246,7 @@ export class OahrCli extends OahrBase {
       r.setPrompt(this.prompt);
       r.prompt();
       if(this.onStart){
-        console.log('Trying to enter previous lobby in 20 seconds... Type \'stop\' to cancel');
+        console.log('Trying to enter previous lobby in 10 seconds... Type \'stop\' to cancel');
         lobbyTimer = setTimeout(async () => {
           try {
             const lobbyId = getPreviousLobbyId();
@@ -257,14 +257,14 @@ export class OahrCli extends OahrBase {
             await this.makeLobbyAsync(this.lobbyopts.title || '__');
             this.transitionToLobbyMenu();
           }
-        }, 20000);
+        }, 10000);
       }
       else{
-        console.log('Auto making lobby in 20 seconds... Type \'stop\' to cancel.');
+        console.log('Auto making lobby in 10 seconds... Type \'stop\' to cancel.');
         lobbyTimer = setTimeout(async () => {
           await this.makeLobbyAsync(this.lobbyopts.title || '__');
           this.transitionToLobbyMenu();
-        }, 20000);
+        }, 10000);
       }
     });
     this.client.once('part', () => {

@@ -118,5 +118,6 @@ export class OahrBase {
     await this.lobby.EnterLobbyAsync(channel, onStart);
     // await this.lobby.LoadMpSettingsAsync();
     logger.info(`Successfully entered the lobby. Channel: ${this.lobby.channel}`);
+    this.lobby.SendMessage(`Bot re-entered after updating successfully! To check current host order, type !queue`);
   }
 }
