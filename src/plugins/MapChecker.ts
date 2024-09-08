@@ -55,6 +55,8 @@ export type MapCheckerOption = {
   length_max: number;
   gamemode: PlayMode;
   allow_convert: boolean;
+  blacklisted_mapset_id_path: string,
+  blacklisted_mapset_names_path: string,
   map_description: string;
 };
 
@@ -528,7 +530,7 @@ export class MapChecker extends LobbyPlugin {
     const mapsetId = this.playingMap?.beatmapset_id || 0;
     if(mapsetId === 0) return;
     const mapsetName = this.playingMap?.beatmapset?.title || '';
-    fs.appendFile('./maplists/blacklisted_mapset_ids.txt', `\n${mapsetId}`, (err) => {
+    fs.appendFile(this.option.blacklisted_mapset_id_path, `\n${mapsetId}`, (err) => {
       if (err) {
         this.logger.error(`Failed to add [https://osu.ppy.sh/beatmapsets/${mapsetId} ${mapsetName}] to blacklist`, err);
       } else {
@@ -545,7 +547,7 @@ export class MapChecker extends LobbyPlugin {
     const initialLength = this.validator.blacklistedIds.length;
     this.validator.blacklistedIds = this.validator.blacklistedIds.filter(blacklistedId => blacklistedId !== mapsetId);
     if(this.validator.blacklistedIds.length === initialLength) return;
-    fs.writeFile('./maplists/blacklisted_mapset_ids.txt', this.validator.blacklistedIds.join('\n'), (err) => {
+    fs.writeFile(this.option.blacklisted_mapset_id_path, this.validator.blacklistedIds.join('\n'), (err) => {
       if (err) {
         this.logger.error(`Failed to remove [https://osu.ppy.sh/beatmapsets/${mapsetId} ${mapsetName}] from blacklist`, err);
       } else {
@@ -914,8 +916,8 @@ export class MapValidator {
   constructor(option: MapCheckerOption, logger: Logger, lobbyInstance: Lobby) {
     this.option = option;
     this.logger = logger;
-    this.blacklistedIds = this.LoadFilters('./maplists/blacklisted_mapset_ids.txt').map(Number).filter(id => !isNaN(id));
-    this.blacklistedNames = this.LoadFilters('./maplists/blacklisted_mapset_names.txt');
+    this.blacklistedIds = this.LoadFilters(this.option.blacklisted_mapset_id_path).map(Number).filter(id => !isNaN(id));
+    this.blacklistedNames = this.LoadFilters(this.option.blacklisted_mapset_names_path);
     this.lobbyInstance = lobbyInstance;
   }
 

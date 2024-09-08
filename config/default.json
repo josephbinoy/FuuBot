@@ -99,6 +99,8 @@
     "gamemode": "osu",
     "num_violations_allowed": 3,
     "allow_convert": true,
+    "blacklisted_mapset_id_path": "",
+    "blacklisted_mapset_names_path": "",
     "map_description": "[https://osu.ppy.sh/b/${map_id} ${title}] ${mods} | Mirrors:  [https://beatconnect.io/b/${beatmapset_id} BeatConnect.io] | [https://api.nerinyan.moe/d/${beatmapset_id}?novideo=1 NeriNyan.moe]\nStar Rating: ${star} | Length: ${length} | BPM: ${bpm} | AR: ${ar} | CS: ${cs} | Stamina: ${stamina} | Circle/Slider Ratio: ${csr} | Unique Pick Count: [https://fuubot.mineapple.net/ ${play_count}]"
   },
   "MiscLoader": {},
