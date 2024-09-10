@@ -984,10 +984,17 @@ export class MapValidator {
       violationMsg = result;
     }
 
-    else if(this.blacklistedIds.includes(map.beatmapset_id) || this.blacklistedNames.includes(map.beatmapset?.title || '')){
+    else if(this.blacklistedIds.includes(map.beatmapset_id)){
       rate=69;
       this.blackedMap = map;
       violationMsg='it was found in [https://fuubot.mineapple.net/blacklist blacklisted maps list]. Please pick another map';
+    }
+
+    else if(this.blacklistedNames.includes(map.beatmapset?.title || '')){
+      rate=69;
+      this.blackedMap = map;
+      this.silentlyAddToBlacklist();
+      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map.';
     }
 
     else if(this.option.advanced_filters.enabled && (result = this.fixedFiltering(attributes)) !== "" || (result = this.miscFiltering(map, attributes.hit_length)) !== ""){
@@ -1092,6 +1099,18 @@ export class MapValidator {
       desc += 'NSFW maps are not allowed';
     }
     return desc;
+  }
+
+  silentlyAddToBlacklist(): void {
+    const mapsetId = this.blackedMap?.beatmapset_id || 0;
+    if(mapsetId === 0) return;
+    fs.appendFile(this.option.blacklisted_mapset_id_path, `\n${mapsetId}`, (err) => {
+      if (err) {
+        this.logger.error(`Failed to add [https://osu.ppy.sh/beatmapsets/${mapsetId} ${mapsetId}] to blacklisted ids`, err);
+      } else {
+        this.blacklistedIds.push(mapsetId);
+      }
+    });
   }
 
   checkBlackList(map: Beatmap): string {
