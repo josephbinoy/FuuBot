@@ -1,5 +1,6 @@
 import { Database } from 'sqlite';
 import { WebApiClient } from '../webapi/WebApiClient';
+import axios from 'axios';
 export interface PickEntry {
     beatmapId: number;
     pickerId: number;
@@ -145,3 +146,10 @@ export function timeAgo(createdAt: string): string {
     }
 }
 
+export async function notifyFuuBotWebServer(picks: PickEntry[]): Promise<void> {
+    try {
+        await axios.post(`http://localhost:${process.env.FUUBOT_WEB_SERVER_PORT}/api/update`, { picks });
+    } catch (error) {
+        console.log('Error notifying web server:'+error);
+    }
+}

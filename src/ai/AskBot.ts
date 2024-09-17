@@ -12,7 +12,6 @@ import { VectorStoreRetriever } from "@langchain/core/vectorstores";
 import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
 import { RunnableSequence} from "@langchain/core/runnables";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
-import 'dotenv/config';
 
 
 // import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";

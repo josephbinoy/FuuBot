@@ -9,7 +9,7 @@ import { Beatmap, Beatmapset } from '../webapi/Beatmapsets';
 import { getConfig } from '../TypedConfig';
 import { Logger } from '../Loggers';
 import { WebApiClient } from '../webapi/WebApiClient';
-import { PickEntry, getWeeklyAndAlltimeCount, MapCount, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo} from '../db/helpers';
+import { PickEntry, getWeeklyAndAlltimeCount, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo, notifyFuuBotWebServer} from '../db/helpers';
 import * as modCalc from '../helpers/modCalculator'
 import fs from 'fs';
 
@@ -175,6 +175,8 @@ export class MapChecker extends LobbyPlugin {
           if(this.lobby.dbClient){
             this.logger.info('Inserting to database');
             await insertPicks(this.lobby.dbClient, this.picksBuffer);
+            const picks = Array.from(this.picksBuffer.values())
+            notifyFuuBotWebServer(picks);
             this.picksBuffer.clear();
             this.bufferCount.clear();
             this.lobby.lastDbUpdateTime = Date.now();
@@ -191,6 +193,8 @@ export class MapChecker extends LobbyPlugin {
           if(this.lobby.dbClient){
             this.logger.info('Inserting to database');
             await insertPicks(this.lobby.dbClient, this.picksBuffer);
+            const picks = Array.from(this.picksBuffer.values())
+            notifyFuuBotWebServer(picks);
             this.picksBuffer.clear();
             this.bufferCount.clear();
             this.lobby.lastDbUpdateTime = Date.now();
