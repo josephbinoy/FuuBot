@@ -689,7 +689,8 @@ export class MapChecker extends LobbyPlugin {
 
   private async check(mapId: number, mapTitle: string): Promise<void> {
     if (mapId === this.oldMapId){
-      this.rejectMap(`You cannot pick the previous map again! Please pick another map.`, false);
+      this.numViolations--;
+      this.rejectMap(`Please pick a new map!`, false);
       return;
     }
     try {
