@@ -12,7 +12,7 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
     const streakString = streak>2?`${winner} has won ${streak} matches in a row now`:'';
     const pastString=(previousSummary=='')?'':'Following is the summary from previous round. Use this context also in your summary';
     const prompt = ChatPromptTemplate.fromMessages([
-            ["system", "You are a commentator for an osu! multi lobby. Maintain a positive atmosphere, highlight only the top performers. The main objective is to get the highest score."],
+            ["system", "You are a commentator for an osu! multi lobby. Highlight only the top performers. The main objective is to get the highest score."],
             ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy.
             {fcInstr}{sliderInstr}
             Leaderboard:{leaderboard}
