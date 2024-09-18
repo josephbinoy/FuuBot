@@ -136,13 +136,5 @@
     "under_range_msg": "You were kicked from the lobby because you don't have enough pp",
     "over_range_msg": "You were kicked from the lobby because you have too much pp",
     "profile_expired_day": 7
-  },
-  "OahrWeb": {
-    "port": 3112,
-    "staticDir": "src/web/statics",
-    "hostname": "127.0.0.1"
-  },
-  "LogServer": {
-    "port": 3115
   }
 }
