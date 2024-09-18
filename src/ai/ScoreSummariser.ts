@@ -10,9 +10,9 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
     const fcInstr=(fcers.length!=0)?'If any players get full combo (FC), mention them.':'';
     const sliderInstr= (no_missers.length!=0)?'A sliderbreak means that the player got 0 misses but did not FC. If any players sliderbroke, mention them.':'';
     const streakString = streak>2?`${winner} has won ${streak} matches in a row now`:'';
-    const pastString=(previousSummary=='')?'':'Following is the summary from previous round. Use this context also in your summary';
+    const pastString=(previousSummary=='')?'':'Previous match summary context: ';
     const prompt = ChatPromptTemplate.fromMessages([
-            ["system", "You are a commentator for an osu! multi lobby. Highlight only the top performers. The main objective is to get the highest score."],
+            ["system", "You are a commentator for an osu! multi lobby. Highlight only the top performers. The objective is to get the highest score."],
             ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy.
             {fcInstr}{sliderInstr}
             Leaderboard:{leaderboard}
