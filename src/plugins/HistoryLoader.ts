@@ -13,6 +13,8 @@ export class HistoryLoader extends LobbyPlugin {
   best_accers: string[] = [];
   fcers: string[] = [];
   no_missers: string[] = [];
+  one_missers: string[] = [];
+  almost_fcers: string[] = [];
   modsUsed: boolean = false;
   previousSummary: string='';
   streak: number = 0;
@@ -57,7 +59,19 @@ export class HistoryLoader extends LobbyPlugin {
               this.streak=1;
               this.previousWinner=sortedLeaderboard[0].name;
             }
-            const summary = await getSummary(this.fcers, JSON.stringify(sortedLeaderboard), this.best_accers, this.best_acc, this.no_missers, sortedLeaderboard[0].name, this.modsUsed, this.previousSummary, this.streak);
+            const summary = await getSummary(
+              this.fcers, 
+              JSON.stringify(sortedLeaderboard), 
+              this.best_accers, 
+              this.best_acc, 
+              this.no_missers, 
+              sortedLeaderboard[0].name, 
+              this.modsUsed, 
+              this.previousSummary, 
+              this.streak,
+              this.one_missers,
+              this.almost_fcers
+            );
             this.lobby.SendMessage(summary);
             this.previousSummary=summary;
           }
@@ -78,6 +92,8 @@ export class HistoryLoader extends LobbyPlugin {
           this.best_accers = [];
           this.fcers = [];
           this.no_missers = [];
+          this.one_missers = [];
+          this.almost_fcers = [];
           this.modsUsed = false;
         }
       } 
@@ -104,11 +120,20 @@ export class HistoryLoader extends LobbyPlugin {
         score: score.score
       }
       this.leaderboard.push(pscore);
-      if (score.statistics.count_miss == 0)
+      if (score.statistics.count_miss == 0){
         if(this.lobby.maxCombo - score.max_combo < 15)
           this.fcers.push(name)
         else
           this.no_missers.push(name)
+      }
+      else if (score.statistics.count_miss == 1){
+        this.one_missers.push(name);
+        if(this.lobby.maxCombo - score.max_combo < 15)
+          this.almost_fcers.push(name);
+      }
+      else if(this.lobby.maxCombo - score.max_combo < 15){
+        this.almost_fcers.push(name); 
+      }
       if (score.accuracy > this.best_acc) {
         this.best_acc = score.accuracy;
         this.best_accers = [name];
