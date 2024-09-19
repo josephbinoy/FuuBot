@@ -3,7 +3,7 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 export async function getSummary(fcers: string[], leaderboard: string, bestaccers: string[], best_acc: number, no_missers: string[], winner: string, modsUsed: boolean, previousSummary: string, streak:number, one_missers: string[], almost_fcers: string[]): Promise<string> {
-    const modString = (modsUsed)?'Only use mod acronyms like HD, HR etc.':'';
+    const modString = (modsUsed)?'If a top 2 player uses mods, mention it for them only. Only use mod acronyms like HD, HR etc.':'';
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
     const noMissString = no_missers.length!=0?'Players who sliderbroke: '+no_missers.join(", "):'';
