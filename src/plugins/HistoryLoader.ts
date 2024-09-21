@@ -105,6 +105,7 @@ export class HistoryLoader extends LobbyPlugin {
 
   analyzeAndCreatePerfMetrics(game: Game | undefined) {
     if (game == undefined) return;
+    const fcThreshold = this.lobby.maxCombo*0.9;
     for (const score of game.scores) {
       if (score.passed == false) continue;
       if (score.mods.length > 0) {
@@ -128,10 +129,10 @@ export class HistoryLoader extends LobbyPlugin {
       }
       else if (score.statistics.count_miss == 1){
         this.one_missers.push(name);
-        if(this.lobby.maxCombo - score.max_combo < 15)
+        if(score.max_combo >= fcThreshold)
           this.almost_fcers.push(name);
       }
-      else if(this.lobby.maxCombo - score.max_combo < 15){
+      else if(score.max_combo >= fcThreshold){
         this.almost_fcers.push(name); 
       }
       if (score.accuracy > this.best_acc) {
