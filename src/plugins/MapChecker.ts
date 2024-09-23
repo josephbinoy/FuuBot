@@ -9,7 +9,7 @@ import { Beatmap, Beatmapset } from '../webapi/Beatmapsets';
 import { getConfig } from '../TypedConfig';
 import { Logger } from '../Loggers';
 import { WebApiClient } from '../webapi/WebApiClient';
-import { PickEntry, getWeeklyAndAlltimeCount, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo, notifyFuuBotWebServer} from '../db/helpers';
+import { PickEntry, getAllCounts, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo, notifyFuuBotWebServer} from '../db/helpers';
 import * as modCalc from '../helpers/modCalculator'
 import fs from 'fs';
 
@@ -18,6 +18,7 @@ export type MapCheckerOption = {
   dynamic_overplayed_map_checker:{
     enabled: boolean,
     pick_count_weekly_limit: number,
+    pick_count_monthly_limit: number,
     pick_count_alltime_limit: number,
     picks_delete_time_period: string
   },
@@ -100,6 +101,7 @@ export class MapChecker extends LobbyPlugin {
   picksBuffer: Map<string, PickEntry> = new Map<string, PickEntry>();
   operationQueue: OperationQueue = new OperationQueue();
   weeklyCount: number = 0;
+  monthlyCount: number = 0;
   alltimeCount: number = 0;
   lastInvokedListCommand: number = 0;
   bufferCount:Map<number, Set<number>> = new Map<number, Set<number>>();
@@ -696,12 +698,17 @@ export class MapChecker extends LobbyPlugin {
     try {
       const map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
       if (this.option.dynamic_overplayed_map_checker.enabled && this.lobby.dbClient){
-        let { weeklyCount, alltimeCount } = await getWeeklyAndAlltimeCount(this.lobby.dbClient, map.beatmapset_id);
+        let { weeklyCount, monthlyCount, alltimeCount } = await getAllCounts(this.lobby.dbClient, map.beatmapset_id);
         const curBufferCount = this.bufferCount.get(map.beatmapset_id)?.size || 0;
         this.weeklyCount = weeklyCount + curBufferCount;
+        this.monthlyCount = monthlyCount + curBufferCount;
         this.alltimeCount = alltimeCount + curBufferCount;
         if(this.alltimeCount >= this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit){
-          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. [https://fuubot.mineapple.net/history/${map.beatmapset_id} Check here])`, false)
+          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. [https://fuubot.mineapple.net/history/${map.beatmapset_id} Check history])`, false)
+          return;
+        }
+        if(this.monthlyCount >= this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit){
+          this.rejectMap(`Monthly quota for this map has been reached! (Picked by ${this.monthlyCount} players past month. [https://fuubot.mineapple.net/history/${map.beatmapset_id} Check history])`, false)
           return;
         }
         if(this.weeklyCount >= this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit){

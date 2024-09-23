@@ -15,7 +15,6 @@ export class HistoryLoader extends LobbyPlugin {
   no_missers: string[] = [];
   one_missers: string[] = [];
   almost_fcers: string[] = [];
-  modsUsed: boolean = false;
   previousSummary: string='';
   streak: number = 0;
   previousWinner: string = '';
@@ -61,12 +60,11 @@ export class HistoryLoader extends LobbyPlugin {
             }
             const summary = await getSummary(
               this.fcers, 
-              JSON.stringify(sortedLeaderboard), 
+              sortedLeaderboard, 
               this.best_accers, 
               this.best_acc, 
               this.no_missers, 
               sortedLeaderboard[0].name, 
-              this.modsUsed, 
               this.previousSummary, 
               this.streak,
               this.one_missers,
@@ -94,7 +92,6 @@ export class HistoryLoader extends LobbyPlugin {
           this.no_missers = [];
           this.one_missers = [];
           this.almost_fcers = [];
-          this.modsUsed = false;
         }
       } 
       catch (e: any) {
@@ -108,17 +105,15 @@ export class HistoryLoader extends LobbyPlugin {
     const fcThreshold = this.lobby.maxCombo*0.9;
     for (const score of game.scores) {
       if (score.passed == false) continue;
-      if (score.mods.length > 0) {
-        this.modsUsed = true;
-      }
       score.accuracy = parseFloat((score.accuracy * 100).toFixed(2))
       let name = [...this.lobby.players].find(p => p.id == score.user_id)?.name;
       if (name == undefined) {
         name = this.searchUsers(score.user_id) ?? 'unknown';
       }
       const pscore: PromptScore = {
-        name: `${name}${score.mods.length > 0 ? ` using ${score.mods.join('')} mod` : ''}`,
-        score: score.score
+        name: name,
+        score: score.score,
+        mods: score.mods,
       }
       this.leaderboard.push(pscore);
       if (score.statistics.count_miss == 0){

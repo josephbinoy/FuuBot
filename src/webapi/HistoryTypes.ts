@@ -18,6 +18,7 @@ export type Match = {
 export type PromptScore = {
   'name': string,
   'score': number,
+  'mods': string[]
 }
 
 export type Event = {

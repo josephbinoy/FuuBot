@@ -1,9 +1,11 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { PromptScore } from "../webapi/HistoryTypes";
 
-export async function getSummary(fcers: string[], leaderboard: string, bestaccers: string[], best_acc: number, no_missers: string[], winner: string, modsUsed: boolean, previousSummary: string, streak:number, one_missers: string[], almost_fcers: string[]): Promise<string> {
-    const modString = (modsUsed)?'If a top 2 player uses mods, mention it for them only. Only use mod acronyms like HD, HR etc.':'';
+export async function getSummary(fcers: string[], leaderboard: PromptScore[], bestaccers: string[], best_acc: number, no_missers: string[], winner: string, previousSummary: string, streak:number, one_missers: string[], almost_fcers: string[]): Promise<string> {
+    const [leaderboardString, modsUsed] = getLeaderboardString(leaderboard);
+    const modString = (modsUsed)?'If a player uses mods, mention it':'';
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
     const noMissString = no_missers.length!=0?'Players who sliderbroke: '+no_missers.join(", "):'';
@@ -17,7 +19,7 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
         ["system", "You are a commentator for an osu! multi lobby. The objective is to get the highest score."],
         ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy.
         {fcInstr}{sliderInstr}
-        Leaderboard:{leaderboard}
+        Leaderboard:{leaderboardString}
         {fcerString}
         {noMissString}
         {oneMissString}
@@ -35,7 +37,7 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
 
     const summary = await chain.invoke({
         modString:modString,
-        leaderboard:leaderboard,
+        leaderboardString:leaderboardString,
         fcerString:fcerString,
         best_acc:best_acc,
         accerString:accerString,
@@ -49,7 +51,21 @@ export async function getSummary(fcers: string[], leaderboard: string, bestaccer
         pastString:pastString,
         previousSummary:previousSummary
     });
-    return summary;
+    return summary.replace(/\n/g, ' ');
 }
 
+function getLeaderboardString(leaderboard: PromptScore[]): [string, boolean] {
+    let leaderboardString = '';
+    let modsUsed = false;
+    for (let i = 0; i < leaderboard.length; i++) {
+        leaderboardString += `${i + 1}. ${leaderboard[i].name} scored ${leaderboard[i].score} ${(leaderboard[i].mods.length > 0 && i<3) ? `using ${leaderboard[i].mods.join('')} mod` : ''}`;
+        if (i != leaderboard.length - 1) {
+            leaderboardString += ' , ';
+        }
+        if (leaderboard[i].mods.length > 0){
+            modsUsed=true;
+        }
+    }
+    return [leaderboardString, modsUsed];
+}
 
