@@ -704,15 +704,15 @@ export class MapChecker extends LobbyPlugin {
         this.monthlyCount = monthlyCount + curBufferCount;
         this.alltimeCount = alltimeCount + curBufferCount;
         if(this.alltimeCount >= this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit){
-          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. [https://fuubot.mineapple.net/history/${map.beatmapset_id} Check history])`, false)
+          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. [https://fuubot.mineapple.net?preset=alltime Check all time list])`, false)
           return;
         }
         if(this.monthlyCount >= this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit){
-          this.rejectMap(`Monthly quota for this map has been reached! (Picked by ${this.monthlyCount} players past month. [https://fuubot.mineapple.net/history/${map.beatmapset_id} Check history])`, false)
+          this.rejectMap(`Monthly quota for this map has been reached! (Picked by ${this.monthlyCount} players past month. [https://fuubot.mineapple.net?preset=monthly Check monthly list])`, false)
           return;
         }
         if(this.weeklyCount >= this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit){
-          this.rejectMap(`Weekly quota for this map has been reached! (Picked by ${this.weeklyCount} players past week. [https://fuubot.mineapple.net/history/${map.beatmapset_id} Check here])`, false)
+          this.rejectMap(`Weekly quota for this map has been reached! (Picked by ${this.weeklyCount} players past week. [https://fuubot.mineapple.net Check weekly list])`, false)
           return;
         }
         const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
