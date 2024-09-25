@@ -58,7 +58,7 @@ function getLeaderboardString(leaderboard: PromptScore[]): [string, boolean] {
     let leaderboardString = '';
     let modsUsed = false;
     for (let i = 0; i < leaderboard.length; i++) {
-        leaderboardString += `${i + 1}. ${leaderboard[i].name} scored ${leaderboard[i].score} ${(leaderboard[i].mods.length > 0 && i<3) ? `using ${leaderboard[i].mods.join('')} mod` : ''}`;
+        leaderboardString += `${i + 1}. ${leaderboard[i].name} scored ${leaderboard[i].score} ${(leaderboard[i].mods.length > 0 && i<3) ? `using ${leaderboard[i].mods.join('')}` : ''}`;
         if (i != leaderboard.length - 1) {
             leaderboardString += ' , ';
         }

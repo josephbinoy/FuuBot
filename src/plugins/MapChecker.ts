@@ -120,9 +120,13 @@ export class MapChecker extends LobbyPlugin {
     'Autopilot': 'AP',
     'Spun Out': 'SO',
   };
-
   diffAffectingMods = ['Easy', 'HalfTime', 'HardRock', 'DoubleTime', 'Nightcore', 'Flashlight'];
-
+  websiteLinks ={
+    alltime: '',
+    monthly: '',
+    weekly: '',
+    history: (id: number) => ''
+  }
 
   constructor(lobby: Lobby, option: Partial<MapCheckerUncheckedOption> = {}) {
     super(lobby, 'MapChecker', 'mapChecker');
@@ -136,6 +140,14 @@ export class MapChecker extends LobbyPlugin {
     this.validator = new MapValidator(this.option, this.logger, this.lobby);
     this.defaultIds = this.validator.LoadFilters('./maplists/default_map_ids.txt').map(Number).filter(id => !isNaN(id));
     this.registerEvents();
+    if(process.env.HOST_NAME==='greatmcgamer'){
+      this.websiteLinks = {
+        alltime: '[https://fuubot.mineapple.net?preset=alltime Check all time list]',
+        monthly: '[https://fuubot.mineapple.net?preset=monthly Check monthly list]',
+        weekly: '[https://fuubot.mineapple.net Check weekly list]',
+        history: (id: number) => `[https://fuubot.mineapple.net/history/${id} Check History]`,
+      };
+    }
   }
 
   private addPickAndUpdateCount(pick: PickEntry, hasPicked:boolean): void {
@@ -704,15 +716,15 @@ export class MapChecker extends LobbyPlugin {
         this.monthlyCount = monthlyCount + curBufferCount;
         this.alltimeCount = alltimeCount + curBufferCount;
         if(this.alltimeCount >= this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit){
-          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. [https://fuubot.mineapple.net?preset=alltime Check all time list])`, false)
+          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. ${this.websiteLinks.alltime})`, false)
           return;
         }
         if(this.monthlyCount >= this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit){
-          this.rejectMap(`Monthly quota for this map has been reached! (Picked by ${this.monthlyCount} players past month. [https://fuubot.mineapple.net?preset=monthly Check monthly list])`, false)
+          this.rejectMap(`Monthly quota for this map has been reached! (Picked by ${this.monthlyCount} players past month. ${this.websiteLinks.monthly})`, false)
           return;
         }
         if(this.weeklyCount >= this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit){
-          this.rejectMap(`Weekly quota for this map has been reached! (Picked by ${this.weeklyCount} players past week. [https://fuubot.mineapple.net Check weekly list])`, false)
+          this.rejectMap(`Weekly quota for this map has been reached! (Picked by ${this.weeklyCount} players past week. ${this.websiteLinks.weekly})`, false)
           return;
         }
         const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
@@ -771,11 +783,11 @@ export class MapChecker extends LobbyPlugin {
             break;
           case FetchBeatmapErrorReason.NotFound:
             this.logger.info(`Beatmap cannot be found. Checked beatmap: ${mapId}`);
-            this.rejectMap(`[https://osu.ppy.sh/b/${mapId} ${mapTitle}] had already been removed from the website.`, false);
+            this.rejectMap(`[https://osu.ppy.sh/b/${mapId} ${mapTitle}] has already been removed from the website.`, false);
             break;
           case FetchBeatmapErrorReason.PlayModeMismatched:
             this.logger.info(`Gamemode mismatched. Checked beatmap: ${mapId}`);
-            this.rejectMap(`[https://osu.ppy.sh/b/${mapId} ${mapTitle}] is not ${this.option.gamemode.officialName} beatmap. Pick ${this.option.gamemode.officialName} beatmap.`, false);
+            this.rejectMap(`[https://osu.ppy.sh/b/${mapId} ${mapTitle}] is not an ${this.option.gamemode.officialName} beatmap. Please pick an ${this.option.gamemode.officialName} beatmap.`, false);
             break;
           case FetchBeatmapErrorReason.NotAvailable:
             this.logger.info(`Beatmap is not available. Checked beatmap: ${mapId}`);
@@ -789,10 +801,12 @@ export class MapChecker extends LobbyPlugin {
   }
 
   private skipHost(): void {
-    const msg = `The number of violations has reached ${this.option.num_violations_allowed}. Skipped player ${this.lobby.host?.escaped_name}`;
-    this.logger.info(msg);
-    this.lobby.SendMessage(msg);
-    this.SendPluginMessage('skip');
+    if(this.lobby.host){
+      const msg = `The number of violations has reached ${this.option.num_violations_allowed}. Skipping player ${this.lobby.host.escaped_name}`;
+      this.logger.info(msg);
+      this.lobby.SendMessage(msg);
+      this.SendPluginMessage('skip');
+    }
   }
 
   private rejectMap(reason: string, showRegulation: boolean): void {
@@ -897,7 +911,8 @@ export class MapChecker extends LobbyPlugin {
     desc = desc.replace(/\$\{cs\}/g, Number.isInteger(attributes.cs) ? attributes.cs.toString() : attributes.cs.toFixed(1));
     desc = desc.replace(/\$\{stamina\}/g, cps.toFixed(2));
     desc = desc.replace(/\$\{csr\}/g, csr);
-    desc = desc.replace(/\$\{play_count\}/g, `${this.weeklyCount.toString()} times past week.`); 
+    desc = desc.replace(/\$\{play_count\}/g, `${this.weeklyCount.toString()} times past week.`);
+    desc = desc.replace(/\$\{history\}/g, this.websiteLinks.history(set.id));
     return desc;
   }
 
