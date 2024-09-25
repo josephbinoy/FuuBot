@@ -5,7 +5,7 @@ import { PromptScore } from "../webapi/HistoryTypes";
 
 export async function getSummary(fcers: string[], leaderboard: PromptScore[], bestaccers: string[], best_acc: number, no_missers: string[], winner: string, previousSummary: string, streak:number, one_missers: string[], almost_fcers: string[]): Promise<string> {
     const [leaderboardString, modsUsed] = getLeaderboardString(leaderboard);
-    const modString = (modsUsed)?'Mod usage is mentioned only for top players':'';
+    const modString = (modsUsed)?'If a player uses mods, mention it':'';
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
     const noMissString = no_missers.length!=0?'Players who sliderbroke: '+no_missers.join(", "):'';
