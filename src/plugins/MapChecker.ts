@@ -911,7 +911,7 @@ export class MapChecker extends LobbyPlugin {
     desc = desc.replace(/\$\{cs\}/g, Number.isInteger(attributes.cs) ? attributes.cs.toString() : attributes.cs.toFixed(1));
     desc = desc.replace(/\$\{stamina\}/g, cps.toFixed(2));
     desc = desc.replace(/\$\{csr\}/g, csr);
-    desc = desc.replace(/\$\{play_count\}/g, `${this.weeklyCount.toString()} times past week.`);
+    desc = desc.replace(/\$\{play_count\}/g, `${this.weeklyCount.toString()} players past week.`);
     desc = desc.replace(/\$\{history\}/g, this.websiteLinks.history(set.id));
     return desc;
   }
