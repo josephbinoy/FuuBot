@@ -266,7 +266,7 @@ export class AutoHostSelector extends LobbyPlugin {
       this.changeHost();
       this.raiseOrderChanged('orderd');
     }
-    this.lobby.SendMessage("The host queue was rearranged due to network reconnection. You can check the current order with !queue command.");
+    this.lobby.SendMessage("The host queue was rearranged due to reconnection. You can check the current order with !queue command.");
   }
 
   private onChatCommand(player: Player, command: string, param: string): void {

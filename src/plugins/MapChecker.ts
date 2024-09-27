@@ -971,7 +971,7 @@ export class MapValidator {
       starRating = newStarRating;
       modsOn = true;
     }
-
+    
     const mapmode = PlayMode.from(map.mode);
     if (mapmode !== this.option.gamemode && this.option.gamemode !== null) {
       violationMsg=`the gamemode is not ${this.option.gamemode.officialName}`;
@@ -997,12 +997,12 @@ export class MapValidator {
     }
 
     else if (this.option.length_min > 0 && attributes.length < this.option.length_min) {
-      rate += (this.option.length_min - map.total_length) / 60.0;
+      rate += (this.option.length_min - attributes.length) / 60.0;
       violationMsg=`the beatmap length is shorter than the allowed length`;
     }
 
     else if (this.option.length_max > 0 && this.option.length_max < attributes.length) {
-      rate += (map.total_length - this.option.length_max) / 60.0;
+      rate += (attributes.length - this.option.length_max) / 60.0;
       violationMsg=`the beatmap length is longer than the allowed length`;
     }
 
