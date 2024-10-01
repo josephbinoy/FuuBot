@@ -43,7 +43,6 @@ export async function getSummary(fcers: string[], leaderboard: PromptScore[], be
         fcerString:fcerString,
         best_acc:best_acc,
         avg_acc:avg_acc,
-        avg_combo:avg_combo,
         mapDifficultyString:mapDifficultyString,
         accerString:accerString,
         noMissString:noMissString,
