@@ -79,7 +79,7 @@ function getMapDifficultyString(avg_combo: number, avg_acc: number, fail_count: 
         return `The map was relatively easy`;
     }
     if (fail_count >= 60) {
-        return `The map was chellenging with only ${(100 - fail_count).toFixed(0)}% of players passing`;
+        return `The map was challenging with only ${(100 - fail_count).toFixed(0)}% of players passing`;
     }
     if (avg_acc < 85 || avg_combo < 20) {
         return `The map was challenging`;
