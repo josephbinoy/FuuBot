@@ -136,17 +136,17 @@ export function timeAgo(createdAt: string): string {
     const years = Math.floor(days / 365);
 
     if (years > 0) {
-        return `${years} years ago`;
+        return `${years} year${years == 1 ? '' : 's'} ago`;
     } else if (months > 0) {
-        return `${months} months ago`;
+        return `${months} month${months == 1 ? '' : 's'} ago`;
     } else if (days > 0) {
-        return `${days} days ago`;
+        return `${days} day${days == 1 ? '' : 's'} ago`;
     } else if (hours > 0) {
-        return `${hours} hours ago`;
+        return `${hours} hour${hours == 1 ? '' : 's'} ago`;
     } else if (minutes > 0) {
-        return `${minutes} minutes ago`;
+        return `${minutes} minute${minutes == 1 ? '' : 's'} ago`;
     } else {
-        return `${seconds} seconds ago`;
+        return `${seconds} second${seconds == 1 ? '' : 's'} ago`;
     }
 }
 

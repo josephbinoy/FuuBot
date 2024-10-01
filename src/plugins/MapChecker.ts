@@ -487,7 +487,7 @@ export class MapChecker extends LobbyPlugin {
           statMsg = await getMapStats(this.lobby.dbClient, this.playingMap.beatmapset_id);
         }
         if(statMsg){
-          this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has been picked by ${this.weeklyCount} players past week and ${this.alltimeCount} all time (${statMsg})`);
+          this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has been picked by ${this.weeklyCount} player${this.weeklyCount == 1 ? '' : 's'} past week and ${this.alltimeCount} all time (${statMsg})`);
         }
         else if(statMsg === null){
           this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has never been picked before`);
@@ -911,7 +911,7 @@ export class MapChecker extends LobbyPlugin {
     desc = desc.replace(/\$\{cs\}/g, Number.isInteger(attributes.cs) ? attributes.cs.toString() : attributes.cs.toFixed(1));
     desc = desc.replace(/\$\{stamina\}/g, cps.toFixed(2));
     desc = desc.replace(/\$\{csr\}/g, csr);
-    desc = desc.replace(/\$\{play_count\}/g, `${this.weeklyCount.toString()} players past week.`);
+    desc = desc.replace(/\$\{play_count\}/g, `${this.weeklyCount.toString()} player${this.weeklyCount == 1 ? '' : 's'} past week.`);
     desc = desc.replace(/\$\{history\}/g, this.websiteLinks.history(set.id));
     return desc;
   }
