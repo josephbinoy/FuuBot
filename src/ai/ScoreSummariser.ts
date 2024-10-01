@@ -3,8 +3,9 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { PromptScore } from "../webapi/HistoryTypes";
 
-export async function getSummary(fcers: string[], leaderboard: PromptScore[], bestaccers: string[], best_acc: number, no_missers: string[], winner: string, previousSummary: string, streak:number, one_missers: string[], almost_fcers: string[]): Promise<string> {
+export async function getSummary(fcers: string[], leaderboard: PromptScore[], bestaccers: string[], best_acc: number, avg_acc: number, avg_combo: number, fail_count: number, no_missers: string[], winner: string, previousSummary: string, streak:number, one_missers: string[], almost_fcers: string[]): Promise<string> {
     const [leaderboardString, modsUsed] = getLeaderboardString(leaderboard);
+    const mapDifficultyString = getMapDifficultyString(avg_combo, avg_acc, fail_count);
     const modString = (modsUsed)?'Mods are mentioned only for top players':'';
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
@@ -20,11 +21,12 @@ export async function getSummary(fcers: string[], leaderboard: PromptScore[], be
         ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy.
         {fcInstr}{sliderInstr}
         Leaderboard:{leaderboardString}
+        {mapDifficultyString}
         {fcerString}
         {noMissString}
         {oneMissString}
         {almostFCString}
-        Highest accuracy: {best_acc}% by {accerString}
+        Highest accuracy: {best_acc}% by {accerString} (Lobby average: {avg_acc}%)
         Match Winner: {winner}
         {streakString}
         {pastString}
@@ -40,6 +42,9 @@ export async function getSummary(fcers: string[], leaderboard: PromptScore[], be
         leaderboardString:leaderboardString,
         fcerString:fcerString,
         best_acc:best_acc,
+        avg_acc:avg_acc,
+        avg_combo:avg_combo,
+        mapDifficultyString:mapDifficultyString,
         accerString:accerString,
         noMissString:noMissString,
         fcInstr:fcInstr,
@@ -67,5 +72,18 @@ function getLeaderboardString(leaderboard: PromptScore[]): [string, boolean] {
         }
     }
     return [leaderboardString, modsUsed];
+}
+
+function getMapDifficultyString(avg_combo: number, avg_acc: number, fail_count: number): string {
+    if (avg_acc >= 95 || avg_combo >= 80) {
+        return `The map was relatively easy`;
+    }
+    if (fail_count >= 60) {
+        return `The map was chellenging with only ${(100 - fail_count).toFixed(0)}% of players passing`;
+    }
+    if (avg_acc < 85 || avg_combo < 20) {
+        return `The map was challenging`;
+    }
+    return "";
 }
 

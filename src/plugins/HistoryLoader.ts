@@ -17,6 +17,9 @@ export class HistoryLoader extends LobbyPlugin {
   almost_fcers: string[] = [];
   previousSummary: string='';
   streak: number = 0;
+  avg_acc: number = 0;
+  avg_combo_percent: number = 0;
+  fail_count_percent: number = 0;
   previousWinner: string = '';
 
   constructor(lobby: Lobby) {
@@ -62,7 +65,10 @@ export class HistoryLoader extends LobbyPlugin {
               this.fcers, 
               sortedLeaderboard, 
               this.best_accers, 
-              this.best_acc, 
+              this.best_acc,
+              this.avg_acc,
+              this.avg_combo_percent,
+              this.fail_count_percent,
               this.no_missers, 
               sortedLeaderboard[0].name, 
               this.previousSummary, 
@@ -87,6 +93,9 @@ export class HistoryLoader extends LobbyPlugin {
           }
           this.leaderboard = [];
           this.best_acc = 0;
+          this.avg_acc = 0;
+          this.avg_combo_percent = 0;
+          this.fail_count_percent = 0;
           this.best_accers = [];
           this.fcers = [];
           this.no_missers = [];
@@ -103,8 +112,16 @@ export class HistoryLoader extends LobbyPlugin {
   analyzeAndCreatePerfMetrics(game: Game | undefined) {
     if (game == undefined) return;
     const fcThreshold = this.lobby.maxCombo*0.9;
+    let passedCount = 0;
+    let legitCount = 0;
     for (const score of game.scores) {
+      if(score.accuracy >= 50 ) {
+        this.avg_acc += score.accuracy;
+        this.avg_combo_percent += score.max_combo;
+        legitCount++;
+      }
       if (score.passed == false) continue;
+      passedCount++;
       score.accuracy = parseFloat((score.accuracy * 100).toFixed(2))
       let name = [...this.lobby.players].find(p => p.id == score.user_id)?.name;
       if (name == undefined) {
@@ -137,6 +154,10 @@ export class HistoryLoader extends LobbyPlugin {
         this.best_accers.push(name);
       }
     }
+    this.fail_count_percent = parseFloat(((game.scores.length-passedCount)/game.scores.length).toFixed(2));
+    this.avg_acc = parseFloat((this.avg_acc / legitCount).toFixed(2));
+    this.avg_combo_percent = parseFloat((this.avg_combo_percent / legitCount).toFixed(2));
+    this.avg_combo_percent = parseFloat((this.avg_combo_percent / this.lobby.maxCombo * 100).toFixed(2));
   }
 
   searchUsers(id: Number): string | undefined{
