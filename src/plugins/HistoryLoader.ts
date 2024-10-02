@@ -154,7 +154,7 @@ export class HistoryLoader extends LobbyPlugin {
         this.best_accers.push(name);
       }
     }
-    this.fail_count_percent = parseFloat(((game.scores.length-passedCount)/game.scores.length).toFixed(2));
+    this.fail_count_percent = parseFloat(((game.scores.length-passedCount)/game.scores.length * 100).toFixed(2));
     this.avg_acc = parseFloat((this.avg_acc / legitCount).toFixed(2));
     this.avg_combo_percent = parseFloat((this.avg_combo_percent / legitCount).toFixed(2));
     this.avg_combo_percent = parseFloat((this.avg_combo_percent / this.lobby.maxCombo * 100).toFixed(2));
