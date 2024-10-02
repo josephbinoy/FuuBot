@@ -18,7 +18,7 @@ export async function getSummary(fcers: string[], leaderboard: PromptScore[], be
     const almostFCString = almost_fcers.length!=0?'Players who missed but were very close to FC: '+almost_fcers.join(", "):'';
     const prompt = ChatPromptTemplate.fromMessages([
         ["system", "You are a commentator for an osu! multi lobby. The objective is to get the highest score."],
-        ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy.
+        ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy along with lobby average.
         {fcInstr}{sliderInstr}
         Leaderboard:{leaderboardString}
         {mapDifficultyString}
