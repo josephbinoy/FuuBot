@@ -115,6 +115,7 @@ export class HistoryLoader extends LobbyPlugin {
     let passedCount = 0;
     let legitCount = 0;
     for (const score of game.scores) {
+      score.accuracy = parseFloat((score.accuracy * 100).toFixed(2))
       if(score.accuracy >= 50 ) {
         this.avg_acc += score.accuracy;
         this.avg_combo_percent += score.max_combo;
@@ -122,7 +123,6 @@ export class HistoryLoader extends LobbyPlugin {
       }
       if (score.passed == false) continue;
       passedCount++;
-      score.accuracy = parseFloat((score.accuracy * 100).toFixed(2))
       let name = [...this.lobby.players].find(p => p.id == score.user_id)?.name;
       if (name == undefined) {
         name = this.searchUsers(score.user_id) ?? 'unknown';
