@@ -18,7 +18,7 @@ export async function getSummary(fcers: string[], leaderboard: PromptScore[], be
     const almostFCString = almost_fcers.length!=0?'Players who missed but were very close to FC: '+almost_fcers.join(", "):'';
     const prompt = ChatPromptTemplate.fromMessages([
         ["system", "You are a commentator for an osu! multi lobby. The objective is to get the highest score."],
-        ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy along with lobby average.
+        ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy and specify lobby average beside it.
         {fcInstr}{sliderInstr}
         Leaderboard:{leaderboardString}
         {mapDifficultyString}
@@ -75,13 +75,16 @@ function getLeaderboardString(leaderboard: PromptScore[]): [string, boolean] {
 
 function getMapDifficultyString(avg_combo: number, avg_acc: number, fail_count: number): string {
     if (avg_acc >= 95 || avg_combo >= 80) {
-        return `The map was relatively easy`;
+        return `Players breezed through the map`;
     }
     if (fail_count >= 60) {
-        return `The map was challenging with only ${(100 - fail_count).toFixed(0)}% of players passing`;
+        return `The map was a tough one with only ${(100 - fail_count).toFixed(0)}% of players passing`;
     }
-    if (avg_acc < 85 || avg_combo < 20) {
-        return `The map was challenging`;
+    if (avg_acc <= 80) {
+        return `The map was very challenging with an average accuracy of just ${avg_acc}%`;
+    }
+    if (avg_combo <= 20) {
+        return `The map was difficult to score on`;
     }
     return "";
 }
