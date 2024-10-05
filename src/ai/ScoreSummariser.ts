@@ -55,7 +55,7 @@ export async function getSummary(fcers: string[], leaderboard: PromptScore[], be
         pastString:pastString,
         previousSummary:previousSummary
     });
-    return summary.replace(/\n/g, ' ');
+    return summary.replace(/\n/g, '');
 }
 
 function getLeaderboardString(leaderboard: PromptScore[]): [string, boolean] {
@@ -78,10 +78,10 @@ function getMapDifficultyString(avg_combo: number, avg_acc: number, fail_count: 
         return `Players breezed through the map`;
     }
     if (fail_count >= 60) {
-        return `The map was a tough one with only ${(100 - fail_count).toFixed(0)}% of players passing`;
+        return `The map was brutal with only ${(100 - fail_count).toFixed(0)}% of players passing`;
     }
     if (avg_acc <= 80) {
-        return `The map was very challenging with an average accuracy of just ${avg_acc}%`;
+        return `The map was very challenging to acc on`;
     }
     if (avg_combo <= 20) {
         return `The map was difficult to score on`;

@@ -716,15 +716,15 @@ export class MapChecker extends LobbyPlugin {
         this.monthlyCount = monthlyCount + curBufferCount;
         this.alltimeCount = alltimeCount + curBufferCount;
         if(this.alltimeCount >= this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit){
-          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. ${this.websiteLinks.alltime})`, false)
+          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. ${this.websiteLinks.alltime}). Please pick another map`, false)
           return;
         }
         if(this.monthlyCount >= this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit){
-          this.rejectMap(`Monthly quota for this map has been reached! (Picked by ${this.monthlyCount} players past month. ${this.websiteLinks.monthly})`, false)
+          this.rejectMap(`Monthly quota for this map has been reached! (Picked by ${this.monthlyCount} players past month. ${this.websiteLinks.monthly}). Please pick another map`, false)
           return;
         }
         if(this.weeklyCount >= this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit){
-          this.rejectMap(`Weekly quota for this map has been reached! (Picked by ${this.weeklyCount} players past week. ${this.websiteLinks.weekly})`, false)
+          this.rejectMap(`Weekly quota for this map has been reached! (Picked by ${this.weeklyCount} players past week. ${this.websiteLinks.weekly}). Please pick another map`, false)
           return;
         }
         const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
