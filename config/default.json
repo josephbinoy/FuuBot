@@ -61,9 +61,10 @@
     "enabled": true,
     "dynamic_overplayed_map_checker":{
       "enabled": false,
-      "pick_count_weekly_limit": 9999,
-      "pick_count_monthly_limit": 9999,
-      "pick_count_alltime_limit": 9999,
+      "pick_count_weekly_limit": 999,
+      "pick_count_monthly_limit": 999,
+      "pick_count_yearly_limit": 999,
+      "pick_count_alltime_limit": 999,
       "picks_delete_time_period": ""
     },
     "advanced_filters": {

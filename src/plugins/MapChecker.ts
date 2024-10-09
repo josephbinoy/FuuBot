@@ -9,7 +9,7 @@ import { Beatmap, Beatmapset } from '../webapi/Beatmapsets';
 import { getConfig } from '../TypedConfig';
 import { Logger } from '../Loggers';
 import { WebApiClient } from '../webapi/WebApiClient';
-import { PickEntry, getAllCounts, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo, notifyFuuBotWebServer} from '../db/helpers';
+import { PickEntry, getAllCounts, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo, notifyFuuBotWebServer, getLimits, MapCount} from '../db/helpers';
 import * as modCalc from '../helpers/modCalculator'
 import fs from 'fs';
 
@@ -19,6 +19,7 @@ export type MapCheckerOption = {
     enabled: boolean,
     pick_count_weekly_limit: number,
     pick_count_monthly_limit: number,
+    pick_count_yearly_limit: number,
     pick_count_alltime_limit: number,
     picks_delete_time_period: string
   },
@@ -102,7 +103,12 @@ export class MapChecker extends LobbyPlugin {
   operationQueue: OperationQueue = new OperationQueue();
   weeklyCount: number = 0;
   monthlyCount: number = 0;
+  yearlyCount: number = 0;
   alltimeCount: number = 0;
+  weeklyLimit: number = 999;
+  monthlyLimit: number = 999;
+  yearlyLimit: number = 999;
+  alltimeLimit: number = 999;
   lastInvokedListCommand: number = 0;
   bufferCount:Map<number, Set<number>> = new Map<number, Set<number>>();
   modAcronym: Record<string, string>= {
@@ -123,6 +129,7 @@ export class MapChecker extends LobbyPlugin {
   diffAffectingMods = ['Easy', 'HalfTime', 'HardRock', 'DoubleTime', 'Nightcore', 'Flashlight'];
   websiteLinks ={
     alltime: '',
+    yearly: '',
     monthly: '',
     weekly: '',
     history: (id: number) => ''
@@ -139,14 +146,40 @@ export class MapChecker extends LobbyPlugin {
     }
     this.validator = new MapValidator(this.option, this.logger, this.lobby);
     this.defaultIds = this.validator.LoadFilters('./maplists/default_map_ids.txt').map(Number).filter(id => !isNaN(id));
+    this.initialize();
     this.registerEvents();
     if(process.env.HOST_NAME==='greatmcgamer'){
       this.websiteLinks = {
         alltime: '[https://fuubot.mineapple.net?preset=alltime Check all time list]',
+        yearly: '[https://fuubot.mineapple.net?preset=yearly Check yearly list]',
         monthly: '[https://fuubot.mineapple.net?preset=monthly Check monthly list]',
         weekly: '[https://fuubot.mineapple.net Check weekly list]',
         history: (id: number) => `[https://fuubot.mineapple.net/history/${id} Check History]`,
       };
+    }
+  }
+
+  private async initialize() {
+    this.weeklyLimit = this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit;
+    this.monthlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit;
+    this.yearlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_yearly_limit;
+    this.alltimeLimit = this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit;
+    const limits: MapCount = await getLimits();
+    if (limits.weeklyCount!==999){
+      this.weeklyLimit = limits.weeklyCount;
+      this.logger.info(`Weekly limit set to ${this.weeklyLimit}`);
+    }
+    if (limits.monthlyCount!==999){
+      this.monthlyLimit = limits.monthlyCount;
+      this.logger.info(`Monthly limit set to ${this.monthlyLimit}`);
+    }
+    if (limits.yearlyCount!==999){
+      this.yearlyLimit = limits.yearlyCount;
+      this.logger.info(`Yearly limit set to ${this.yearlyLimit}`);
+    }
+    if (limits.alltimeCount!==999){
+      this.alltimeLimit = limits.alltimeCount;
+      this.logger.info(`All time limit set to ${this.alltimeLimit}`);
     }
   }
 
@@ -710,21 +743,26 @@ export class MapChecker extends LobbyPlugin {
     try {
       const map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
       if (this.option.dynamic_overplayed_map_checker.enabled && this.lobby.dbClient){
-        let { weeklyCount, monthlyCount, alltimeCount } = await getAllCounts(this.lobby.dbClient, map.beatmapset_id);
+        let { weeklyCount, monthlyCount, yearlyCount, alltimeCount } = await getAllCounts(this.lobby.dbClient, map.beatmapset_id);
         const curBufferCount = this.bufferCount.get(map.beatmapset_id)?.size || 0;
         this.weeklyCount = weeklyCount + curBufferCount;
         this.monthlyCount = monthlyCount + curBufferCount;
+        this.yearlyCount = yearlyCount + curBufferCount;
         this.alltimeCount = alltimeCount + curBufferCount;
-        if(this.alltimeCount >= this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit){
+        if(this.alltimeCount >= this.alltimeLimit){
           this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. ${this.websiteLinks.alltime}). Please pick another map`, false)
           return;
         }
-        if(this.monthlyCount >= this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit){
+        if(this.weeklyCount >= this.weeklyLimit){
+          this.rejectMap(`Weekly quota for this map has been reached! (Picked by ${this.weeklyCount} players past week. ${this.websiteLinks.weekly}). Please pick another map`, false)
+          return;
+        }
+        if(this.monthlyCount >= this.monthlyLimit){
           this.rejectMap(`Monthly quota for this map has been reached! (Picked by ${this.monthlyCount} players past month. ${this.websiteLinks.monthly}). Please pick another map`, false)
           return;
         }
-        if(this.weeklyCount >= this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit){
-          this.rejectMap(`Weekly quota for this map has been reached! (Picked by ${this.weeklyCount} players past week. ${this.websiteLinks.weekly}). Please pick another map`, false)
+        if(this.yearlyCount >= this.yearlyLimit){
+          this.rejectMap(`Yearly quota for this map has been reached! (Picked by ${this.yearlyCount} players past year. ${this.websiteLinks.yearly}). Please pick another map`, false)
           return;
         }
         const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
@@ -758,6 +796,7 @@ export class MapChecker extends LobbyPlugin {
         newStarRating = await WebApiClient.getDifficultyRating(mapId, modList);
         this.activeMods = '';
       }
+      this.lobby.mapAttributes = attributes;
       const r = this.validator.RateBeatmap(map, this.override, newStarRating, attributes);
       if (r.rate > 0) {
         if(r.rate === 69){

@@ -3,9 +3,31 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { PromptScore } from "../webapi/HistoryTypes";
 
-export async function getSummary(fcers: string[], leaderboard: PromptScore[], bestaccers: string[], best_acc: number, avg_acc: number, avg_combo: number, fail_count: number, no_missers: string[], winner: string, previousSummary: string, streak:number, one_missers: string[], almost_fcers: string[]): Promise<string> {
+export async function getSummary(
+    fcers: string[], 
+    leaderboard: PromptScore[], 
+    bestaccers: string[], 
+    best_acc: number, 
+    avg_acc: number, 
+    avg_combo: number, 
+    fail_count: number, 
+    no_missers: string[], 
+    winner: string, 
+    previousSummary: string, 
+    streak:number, 
+    one_missers: string[], 
+    almost_fcers: string[],
+    ar: number,
+    bpm: number,
+    cs: number,
+    length: number
+): Promise<string> {
     const [leaderboardString, modsUsed] = getLeaderboardString(leaderboard);
     const mapDifficultyString = getMapDifficultyString(avg_combo, avg_acc, fail_count);
+    let mapDescriptionString = getMapDescriptionString(ar, bpm, cs, length);
+    if (mapDescriptionString != '') {
+        mapDescriptionString = `Here is some info about the map: ${mapDescriptionString}`;
+    }
     const modString = (modsUsed)?'Mods are mentioned only for top players':'';
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
@@ -18,10 +40,11 @@ export async function getSummary(fcers: string[], leaderboard: PromptScore[], be
     const almostFCString = almost_fcers.length!=0?'Players who missed but were very close to FC: '+almost_fcers.join(", "):'';
     const prompt = ChatPromptTemplate.fromMessages([
         ["system", "You are a commentator for an osu! multi lobby. The objective is to get the highest score."],
-        ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy and specify lobby average beside it.
+        ["human", `Summarise the match in a maximum of 40 words. The leaderboard provided is in order of rankings. {modString} Do not reveal scores. Also at the end mention who got the highest accuracy and specify lobby average beside it in brackets.
         {fcInstr}{sliderInstr}
         Leaderboard:{leaderboardString}
         {mapDifficultyString}
+        {mapDescriptionString}
         {fcerString}
         {noMissString}
         {oneMissString}
@@ -44,6 +67,7 @@ export async function getSummary(fcers: string[], leaderboard: PromptScore[], be
         best_acc:best_acc,
         avg_acc:avg_acc,
         mapDifficultyString:mapDifficultyString,
+        mapDescriptionString:mapDescriptionString,
         accerString:accerString,
         noMissString:noMissString,
         fcInstr:fcInstr,
@@ -78,14 +102,33 @@ function getMapDifficultyString(avg_combo: number, avg_acc: number, fail_count: 
         return `Players breezed through the map`;
     }
     if (fail_count >= 60) {
-        return `The map was brutal with only ${(100 - fail_count).toFixed(0)}% of players passing`;
+        return `The map was difficult with only ${(100 - fail_count).toFixed(0)}% of players passing`;
     }
     if (avg_acc <= 80) {
-        return `The map was very challenging to acc on`;
+        return `The map was very challenging to acc`;
     }
     if (avg_combo <= 20) {
-        return `The map was difficult to score on`;
+        return `The map was difficult to score and hold combo`;
     }
     return "";
 }
 
+function getMapDescriptionString(ar: number, bpm:number, cs: number, length: number): string {
+    let description = '';
+    if (bpm && bpm >= 220) {
+        description+=`The map was very fast paced with high BPM. `;
+    }
+    if (length && length >= 330) {
+        description+= `It was a long map requiring stamina and consistency. `;
+    }
+    if (ar && ar >= 9.5) {
+        description+= `The map challenging with its high AR. `;
+    }
+    else if (ar && ar <= 8.5) {
+        description+= `The map tricky to read with its low AR. `;
+    }
+    if (cs && cs >= 5) {
+        description+= `The map required high precision with its smaller circles. `;
+    }
+    return description;
+}

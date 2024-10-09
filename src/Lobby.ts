@@ -11,6 +11,7 @@ import { getConfig } from './TypedConfig';
 import { getLogger, Logger } from './Loggers';
 import setupDatabase from './db/connect';
 import { Database } from 'sqlite';
+import { FixedAttributes } from './plugins/MapChecker';
 
 export enum LobbyStatus {
   Standby,
@@ -49,6 +50,15 @@ export class Lobby {
   mapTitle: string = '';
   mapId: number = 0;
   maxCombo : number = 3000;
+  mapAttributes: FixedAttributes = {
+    bpm: 0,
+    od: 0,
+    ar: 0,
+    cs: 0,
+    hp: 0,
+    length: 0,
+    hit_length: 0
+  };
   mapStartTimeMs = 0;
   mapLength = 0;
   host: Player | null = null;

@@ -74,7 +74,11 @@ export class HistoryLoader extends LobbyPlugin {
               this.previousSummary, 
               this.streak,
               this.one_missers,
-              this.almost_fcers
+              this.almost_fcers,
+              this.lobby.mapAttributes.ar,
+              this.lobby.mapAttributes.bpm,
+              this.lobby.mapAttributes.cs,
+              this.lobby.mapAttributes.length,
             );
             this.lobby.SendMessage(summary);
             this.previousSummary=summary;
@@ -111,7 +115,7 @@ export class HistoryLoader extends LobbyPlugin {
 
   analyzeAndCreatePerfMetrics(game: Game | undefined) {
     if (game == undefined) return;
-    const fcThreshold = this.lobby.maxCombo*0.9;
+    const fcThreshold = this.lobby.maxCombo * 0.8;
     let passedCount = 0;
     let legitCount = 0;
     for (const score of game.scores) {

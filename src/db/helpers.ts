@@ -9,6 +9,7 @@ export interface PickEntry {
 export interface MapCount {
     weeklyCount: number,
     monthlyCount :number,
+    yearlyCount :number,
     alltimeCount :number
 }
 
@@ -27,13 +28,15 @@ export async function getAllCounts(db: Database, beatmapId: number): Promise<Map
     let result: MapCount = {
         weeklyCount: 0,
         monthlyCount: 0,
+        yearlyCount: 0,
         alltimeCount: 0
     };
     const query = `
         SELECT
         COUNT(*) AS total_count,
         SUM(CASE WHEN pick_date >= (strftime('%s', 'now') - 7 * 86400) THEN 1 ELSE 0 END) AS weekly_count,
-        SUM(CASE WHEN pick_date >= (strftime('%s', 'now') - 30 * 86400) THEN 1 ELSE 0 END) AS monthly_count
+        SUM(CASE WHEN pick_date >= (strftime('%s', 'now') - 30 * 86400) THEN 1 ELSE 0 END) AS monthly_count,
+        SUM(CASE WHEN pick_date >= (strftime('%s', 'now') - 365 * 86400) THEN 1 ELSE 0 END) AS yearly_count
         FROM picks
         WHERE BEATMAP_ID = ?;
     `;
@@ -42,6 +45,7 @@ export async function getAllCounts(db: Database, beatmapId: number): Promise<Map
         if (res) {
             result.weeklyCount=res.weekly_count ?? 0,
             result.monthlyCount=res.monthly_count ?? 0,
+            result.yearlyCount=res.yearly_count ?? 0,
             result.alltimeCount=res.total_count ?? 0 
         } 
         return result;
@@ -156,4 +160,25 @@ export async function notifyFuuBotWebServer(picks: PickEntry[]): Promise<void> {
     } catch (error) {
         console.log('Error notifying web server:'+error);
     }
+}
+
+export async function getLimits(): Promise<MapCount> {
+    let limits: MapCount = {
+        weeklyCount: 999,
+        monthlyCount: 999,
+        yearlyCount: 999,
+        alltimeCount: 999
+    }
+    try {
+        const response = await axios.get(`http://localhost:${process.env.FUUBOT_WEB_SERVER_PORT}/api/limits`);
+        if (response.data) {
+            limits.weeklyCount = response.data.weeklyLimit;
+            limits.monthlyCount = response.data.monthlyLimit;
+            limits.yearlyCount = response.data.yearlyLimit;
+            limits.alltimeCount = response.data.alltimeLimit;
+        }
+    } catch (error) {
+        console.log('Error fetching alltime limit from web server:', error);
+    }
+    return limits;
 }
