@@ -751,7 +751,7 @@ export class MapChecker extends LobbyPlugin {
         this.yearlyCount = yearlyCount + curBufferCount;
         this.alltimeCount = alltimeCount + curBufferCount;
         if(this.alltimeCount >= this.alltimeLimit){
-          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players all time. ${this.websiteLinks.alltime}). Please pick another map`, false)
+          this.rejectMap(`This beatmapset is overplayed! (Picked by ${this.alltimeCount} players. ${this.websiteLinks.alltime}). Please pick another map`, false)
           return;
         }
         if(this.weeklyCount >= this.weeklyLimit){
