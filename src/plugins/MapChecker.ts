@@ -421,6 +421,7 @@ export class MapChecker extends LobbyPlugin {
           this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because ${result}`);
           return;
         }
+        this.lobby.mapAttributes = attributes;
         const now = Date.now();
         if (this.option.dynamic_overplayed_map_checker.enabled && this.picksBuffer.size>5 && now - this.lobby.lastDbUpdateTime > 3600000 && attributes.length > 120){
           this.queueInsert();
@@ -796,7 +797,6 @@ export class MapChecker extends LobbyPlugin {
         newStarRating = await WebApiClient.getDifficultyRating(mapId, modList);
         this.activeMods = '';
       }
-      this.lobby.mapAttributes = attributes;
       const r = this.validator.RateBeatmap(map, this.override, newStarRating, attributes);
       if (r.rate > 0) {
         if(r.rate === 69){
