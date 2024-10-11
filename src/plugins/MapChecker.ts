@@ -150,7 +150,7 @@ export class MapChecker extends LobbyPlugin {
     this.registerEvents();
     if(process.env.HOST_NAME==='greatmcgamer'){
       this.websiteLinks = {
-        alltime: '[https://fuubot.mineapple.net?preset=alltime Check all time list]',
+        alltime: '[https://fuubot.mineapple.net?preset=alltime Check overplayed list]',
         yearly: '[https://fuubot.mineapple.net?preset=yearly Check yearly list]',
         monthly: '[https://fuubot.mineapple.net?preset=monthly Check monthly list]',
         weekly: '[https://fuubot.mineapple.net Check weekly list]',
@@ -1299,18 +1299,19 @@ export class MapValidator {
     if(this.option.advanced_filters.languages.length>0){
       let langs = this.option.advanced_filters.languages.map(lang => lang.toLowerCase());
       let allowedLangs = this.option.advanced_filters.languages.join(', ');
-      if(map.beatmapset?.language?.name === 'Unspecified'){
-        if(langs.includes('japanese')){
-          if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
+      if (map.beatmapset?.language?.name && !langs.includes(map.beatmapset?.language?.name.toLowerCase())){
+        if(map.beatmapset?.language?.name === 'Unspecified'){
+          if(langs.includes('japanese')){
+            if(!containsJapanese(map.beatmapset.title_unicode, map.beatmapset.artist_unicode) && !checkTags(map.beatmapset?.tags)){
+              return "beatmap language couldn't be determined (missing metadata)\nType !force to pick the map anyway";
+            }
+          }
+          else{
             return "beatmap language couldn't be determined (missing metadata)\nType !force to pick the map anyway";
           }
         }
-        else{
-          return "beatmap language couldn't be determined (missing metadata)\nType !force to pick the map anyway";
-        }
-      }
-      else if (map.beatmapset?.language?.name && !langs.includes(map.beatmapset?.language?.name.toLowerCase())){
-        return `only ${allowedLangs} maps are allowed in the lobby\nType !force to pick the map anyway`;
+        else 
+          return `only ${allowedLangs} maps are allowed in the lobby\nType !force to pick the map anyway`;
       }
     }
 

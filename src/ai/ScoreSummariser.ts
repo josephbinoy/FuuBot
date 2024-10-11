@@ -121,11 +121,11 @@ function getMapDescriptionString(ar: number, bpm:number, cs: number, length: num
     if (length && length >= 330) {
         description+= `It was a long map requiring stamina and consistency. `;
     }
-    if (ar && ar >= 9.5) {
-        description+= `The map challenging with its high AR. `;
+    if (ar && ar >= 9.6) {
+        description+= `The map required fast reflexes with its high AR. `;
     }
     else if (ar && ar <= 8.5) {
-        description+= `The map tricky to read with its low AR. `;
+        description+= `The map required good reading ability with its low AR. `;
     }
     if (cs && cs >= 5) {
         description+= `The map required high precision with its smaller circles. `;
