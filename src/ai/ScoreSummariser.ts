@@ -99,16 +99,16 @@ function getLeaderboardString(leaderboard: PromptScore[]): [string, boolean] {
 
 function getMapDifficultyString(avg_combo: number, avg_acc: number, fail_count: number): string {
     if (avg_acc >= 95 || avg_combo >= 80) {
-        return `Players breezed through the map`;
+        return `Players breezed through the map. `;
     }
     if (fail_count >= 60) {
-        return `The map was difficult with only ${(100 - fail_count).toFixed(0)}% of players passing`;
+        return `The map was difficult with only ${(100 - fail_count).toFixed(0)}% of players passing. `;
     }
     if (avg_acc <= 80) {
-        return `The map was very challenging to acc`;
+        return `The map was challenging to play. `;
     }
     if (avg_combo <= 20) {
-        return `The map was difficult to score and hold combo`;
+        return `The map was difficult to score and hold combo on. `;
     }
     return "";
 }
@@ -116,19 +116,19 @@ function getMapDifficultyString(avg_combo: number, avg_acc: number, fail_count: 
 function getMapDescriptionString(ar: number, bpm:number, cs: number, length: number): string {
     let description = '';
     if (bpm && bpm >= 220) {
-        description+=`The map was very fast paced with high BPM. `;
+        description+=`The map was very fast paced, requiring quick aim and tapping. `;
     }
     if (length && length >= 330) {
-        description+= `It was a long map requiring stamina and consistency. `;
+        description+= `It was a long map requiring stamina and consistency from the players. `;
     }
     if (ar && ar >= 9.6) {
-        description+= `The map required fast reflexes with its high AR. `;
+        description+= `The map had high AR, hence players required fast reflexes. `;
     }
     else if (ar && ar <= 8.5) {
-        description+= `The map required good reading ability with its low AR. `;
+        description+= `The map had low AR, hence players required good reading skills. `;
     }
     if (cs && cs >= 5) {
-        description+= `The map required high precision with its smaller circles. `;
+        description+= `The map featured smaller circles, hence players require precise aim. `;
     }
     return description;
 }
