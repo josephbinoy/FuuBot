@@ -124,7 +124,7 @@ function getMapDescriptionString(ar: number, bpm:number, cs: number, length: num
     if (ar && ar >= 9.6) {
         description+= `The map had high AR, hence players required fast reflexes. `;
     }
-    else if (ar && ar <= 8.5) {
+    else if (ar && ar <= 8.6) {
         description+= `The map had low AR, hence players required good reading skills. `;
     }
     if (cs && cs >= 5) {

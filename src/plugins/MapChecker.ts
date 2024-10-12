@@ -1060,7 +1060,7 @@ export class MapValidator {
       rate=69;
       this.blackedMap = map;
       this.silentlyAddToBlacklist();
-      violationMsg='it was found in the [https://docs.google.com/spreadsheets/d/13kp8wkm3g0FYfnnEZT1YdmdAEtWQzmPuHlA7kZBYYBo/ overplayed maps list]. Please pick another map.';
+      violationMsg='it was found in [https://fuubot.mineapple.net/blacklist blacklisted maps list]. Please pick another map';
     }
 
     else if(this.option.advanced_filters.enabled && (result = this.fixedFiltering(attributes)) !== "" || (result = this.miscFiltering(map, attributes.hit_length)) !== ""){
