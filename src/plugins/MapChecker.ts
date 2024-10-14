@@ -1269,7 +1269,7 @@ export class MapValidator {
       const cps=(map.count_circles+map.count_sliders+map.count_spinners)/hit_length;
       const limit=getStaminaLimit(hit_length/60, this.option.advanced_filters.stamina_formula_c_value);
       if (cps > limit)
-        return `the beatmap is too stamina draining! Max Stamina: ${limit.toFixed(2)} | Your Map: ${cps.toFixed(2)}`;
+        return `the beatmap is too stamina draining! Max Stamina: ${limit.toFixed(2)} | Your Map: ${cps.toFixed(2)}\nTo know more about stamina limit and how to check stamina of a map, [https://fuubot.mineapple.net/about#stamina click here]`;
     }
     //year
     if(this.option.advanced_filters.year[1]){
