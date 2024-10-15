@@ -25,7 +25,6 @@
     "irc-upd": "^0.11.0",
     "langchain": "^0.1.21",
     "log4js": "^6.4.1",
-    "node-cron": "^3.0.3",
     "open": "^8.4.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
@@ -35,7 +34,6 @@
     "@types/config": "^0.0.39",
     "@types/mocha": "^9.1.0",
     "@types/node": "^16.11.21",
-    "@types/node-cron": "^3.0.11",
     "@types/sinon": "^10.0.9",
     "@typescript-eslint/eslint-plugin": "^5.22.0",
     "@typescript-eslint/parser": "^5.22.0",

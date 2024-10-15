@@ -178,7 +178,7 @@ export async function getLimits(): Promise<MapCount> {
             limits.alltimeCount = response.data.alltimeLimit;
         }
     } catch (error) {
-        console.log('Error fetching alltime limit from web server:', error);
+        console.log('Error fetching limits from web server:', error);
     }
     return limits;
 }

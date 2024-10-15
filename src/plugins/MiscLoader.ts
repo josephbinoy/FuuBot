@@ -20,7 +20,7 @@ export class MiscLoader extends LobbyPlugin {
   canSeeRank: boolean = false;
   lastUsageMap: Map<string, number> = new Map();
   playerCooldown: number = 2 * 60 * 1000; // 2 minutes
-  globalCooldown: number = 10 * 1000; // 10 seconds
+  globalCooldown: number = 30 * 1000; // 30 seconds
   lastInvokedSkill: number = 0;
   lastInvokedRs: number = 0;
   constructor(lobby: Lobby) {
