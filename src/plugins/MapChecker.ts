@@ -760,6 +760,13 @@ export class MapChecker extends LobbyPlugin {
     try {
       const map = await BeatmapRepository.getBeatmap(mapId, this.option.gamemode, this.option.allow_convert);
       if (this.option.dynamic_overplayed_map_checker.enabled && this.lobby.dbClient){
+        const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
+        const pick={ 
+          beatmapId: map.beatmapset_id,
+          pickerId: this.lobby.host?.id || 0, 
+          pickDate: Math.floor(new Date().getTime() / 1000)
+        }
+        this.addPickAndUpdateCount(pick, hasPicked);
         let { weeklyCount, monthlyCount, yearlyCount, alltimeCount } = await getAllCounts(this.lobby.dbClient, map.beatmapset_id);
         const curBufferCount = this.bufferCount.get(map.beatmapset_id)?.size || 0;
         this.weeklyCount = weeklyCount + curBufferCount;
@@ -782,13 +789,6 @@ export class MapChecker extends LobbyPlugin {
           this.rejectMap(`Yearly quota for this map has been reached! (Picked by ${this.yearlyCount} players past year. ${this.websiteLinks.yearly}). Please pick another map`, false)
           return;
         }
-        const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, map.beatmapset_id, this.lobby.host?.id || 0);
-        const pick={ 
-          beatmapId: map.beatmapset_id,
-          pickerId: this.lobby.host?.id || 0, 
-          pickDate: Math.floor(new Date().getTime() / 1000)
-        }
-        this.addPickAndUpdateCount(pick, hasPicked);
       }
       this.lobby.maxCombo = map.max_combo;
       this.lobby.mapLength = map.total_length;
