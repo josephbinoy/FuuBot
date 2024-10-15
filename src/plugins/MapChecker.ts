@@ -12,6 +12,7 @@ import { WebApiClient } from '../webapi/WebApiClient';
 import { PickEntry, getAllCounts, insertPicks, deleteOldPicks, hasPlayerPickedMap, getMapStats, timeAgo, notifyFuuBotWebServer, getLimits, MapCount} from '../db/helpers';
 import * as modCalc from '../helpers/modCalculator'
 import fs from 'fs';
+import cron from 'node-cron';
 
 export type MapCheckerOption = {
   enabled: boolean;
@@ -146,7 +147,12 @@ export class MapChecker extends LobbyPlugin {
     }
     this.validator = new MapValidator(this.option, this.logger, this.lobby);
     this.defaultIds = this.validator.LoadFilters('./maplists/default_map_ids.txt').map(Number).filter(id => !isNaN(id));
-    this.initialize();
+    this.weeklyLimit = this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit;
+    this.monthlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit;
+    this.yearlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_yearly_limit;
+    this.alltimeLimit = this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit;
+    this.updateLimits();
+    this.scheduleDailyLimitUpdate();
     this.registerEvents();
     if(process.env.HOST_NAME==='greatmcgamer'){
       this.websiteLinks = {
@@ -159,28 +165,38 @@ export class MapChecker extends LobbyPlugin {
     }
   }
 
-  private async initialize() {
-    this.weeklyLimit = this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit;
-    this.monthlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit;
-    this.yearlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_yearly_limit;
-    this.alltimeLimit = this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit;
-    const limits: MapCount = await getLimits();
-    if (limits.weeklyCount!==999){
-      this.weeklyLimit = limits.weeklyCount;
-      this.logger.info(`Weekly limit set to ${this.weeklyLimit}`);
+  private async updateLimits() {
+    try {
+      const limits: MapCount = await getLimits();
+      if (limits.weeklyCount!==999){
+        this.weeklyLimit = limits.weeklyCount;
+        this.logger.info(`Weekly limit set to ${this.weeklyLimit}`);
+      }
+      if (limits.monthlyCount!==999){
+        this.monthlyLimit = limits.monthlyCount;
+        this.logger.info(`Monthly limit set to ${this.monthlyLimit}`);
+      }
+      if (limits.yearlyCount!==999){
+        this.yearlyLimit = limits.yearlyCount;
+        this.logger.info(`Yearly limit set to ${this.yearlyLimit}`);
+      }
+      if (limits.alltimeCount!==999){
+        this.alltimeLimit = limits.alltimeCount;
+        this.logger.info(`All time limit set to ${this.alltimeLimit}`);
+      }
     }
-    if (limits.monthlyCount!==999){
-      this.monthlyLimit = limits.monthlyCount;
-      this.logger.info(`Monthly limit set to ${this.monthlyLimit}`);
+    catch (error) {
+      this.logger.error('@MapChecker#updateLimits'+error);
     }
-    if (limits.yearlyCount!==999){
-      this.yearlyLimit = limits.yearlyCount;
-      this.logger.info(`Yearly limit set to ${this.yearlyLimit}`);
-    }
-    if (limits.alltimeCount!==999){
-      this.alltimeLimit = limits.alltimeCount;
-      this.logger.info(`All time limit set to ${this.alltimeLimit}`);
-    }
+  }
+
+  private scheduleDailyLimitUpdate() {
+    cron.schedule('0 1 * * *', () => {
+      this.updateLimits();
+    }, {
+      timezone: 'UTC'
+    });
+    this.logger.info('Scheduled daily limit update (everyday at 01:00 UTC)');
   }
 
   private addPickAndUpdateCount(pick: PickEntry, hasPicked:boolean): void {
@@ -1269,7 +1285,7 @@ export class MapValidator {
       const cps=(map.count_circles+map.count_sliders+map.count_spinners)/hit_length;
       const limit=getStaminaLimit(hit_length/60, this.option.advanced_filters.stamina_formula_c_value);
       if (cps > limit)
-        return `the beatmap is too stamina draining! Max Stamina: ${limit.toFixed(2)} | Your Map: ${cps.toFixed(2)}\nTo know more about stamina limit and how to check stamina of a map, [https://fuubot.mineapple.net/about#stamina click here]`;
+        return `the beatmap is too stamina draining! Max Stamina: ${limit.toFixed(2)} | Your Map: ${cps.toFixed(2)}\nTo know more about stamina and how to check it, [https://fuubot.mineapple.net/about#stamina click here]`;
     }
     //year
     if(this.option.advanced_filters.year[1]){
