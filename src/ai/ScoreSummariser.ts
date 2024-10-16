@@ -28,7 +28,7 @@ export async function getSummary(
     if (mapDescriptionString != '') {
         mapDescriptionString = `Here is some info about the map: ${mapDescriptionString}`;
     }
-    const comboGameString = (leaderboard[0].acc < avg_acc-2) ? 'Given the winner had below average accuracy, the match was an example of the phrase "osu is a combo game"' : '';
+    const comboGameString = (leaderboard.length>4 && leaderboard[0].acc < avg_acc-2) ? 'Given the winner had below average accuracy, the match was an example of the phrase "osu is a combo game"' : '';
     const modString = (modsUsed)?'Mods are mentioned only for top players':'';
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
