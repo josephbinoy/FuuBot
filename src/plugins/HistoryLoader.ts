@@ -134,6 +134,7 @@ export class HistoryLoader extends LobbyPlugin {
       const pscore: PromptScore = {
         name: name,
         score: score.score,
+        acc: score.accuracy,
         mods: score.mods,
       }
       this.leaderboard.push(pscore);

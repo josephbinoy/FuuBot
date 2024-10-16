@@ -28,6 +28,7 @@ export async function getSummary(
     if (mapDescriptionString != '') {
         mapDescriptionString = `Here is some info about the map: ${mapDescriptionString}`;
     }
+    const comboGameString = (leaderboard[0].acc < avg_acc-2) ? 'Given the winner had below average accuracy, the match was an example of the phrase "osu is a combo game"' : '';
     const modString = (modsUsed)?'Mods are mentioned only for top players':'';
     const accerString = bestaccers.join(", ");
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
@@ -51,6 +52,7 @@ export async function getSummary(
         {almostFCString}
         Highest accuracy: {best_acc}% by {accerString} (Lobby average: {avg_acc}%)
         Match Winner: {winner}
+        {comboGameString}
         {streakString}
         {pastString}
         {previousSummary}
@@ -75,6 +77,7 @@ export async function getSummary(
         almostFCString:almostFCString,
         sliderInstr:sliderInstr,
         winner: winner,
+        comboGameString:comboGameString,
         streakString:streakString,
         pastString:pastString,
         previousSummary:previousSummary
@@ -105,10 +108,10 @@ function getMapDifficultyString(avg_combo: number, avg_acc: number, fail_count: 
         return `The map was difficult with only ${(100 - fail_count).toFixed(0)}% of players passing. `;
     }
     if (avg_acc <= 80) {
-        return `The map was challenging to play. `;
+        return `The map was very challenging to play. `;
     }
     if (avg_combo <= 20) {
-        return `The map was difficult to score and hold combo on. `;
+        return `The map was difficult to score and combo. `;
     }
     return "";
 }
@@ -119,16 +122,16 @@ function getMapDescriptionString(ar: number, bpm:number, cs: number, length: num
         description+=`The map was very fast paced, requiring quick aim and tapping. `;
     }
     if (length && length >= 330) {
-        description+= `It was a long map requiring stamina and consistency from the players. `;
+        description+= `It was a long map, requiring stamina and consistency. `;
     }
     if (ar && ar >= 9.6) {
-        description+= `The map had high AR, hence players required fast reflexes. `;
+        description+= `The map had high AR, requiring fast reflexes. `;
     }
     else if (ar && ar <= 8.6) {
-        description+= `The map had low AR, hence players required good reading skills. `;
+        description+= `The map had low AR, requiring good reading skills. `;
     }
     if (cs && cs >= 5) {
-        description+= `The map featured smaller circles, hence players require precise aim. `;
+        description+= `The map featured smaller circles, requiring precise aim. `;
     }
     return description;
 }
