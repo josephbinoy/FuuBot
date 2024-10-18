@@ -30,7 +30,10 @@ export async function getSummary(
     }
     const comboGameString = (leaderboard.length>4 && leaderboard[0].acc < avg_acc-2) ? 'Given the winner had below average accuracy, the match was an example of the phrase "osu is a combo game"' : '';
     const modString = (modsUsed)?'Mods are mentioned only for top players':'';
-    const accerString = bestaccers.join(", ");
+    let accerString = bestaccers.join(", ");
+    if (best_acc == 100) {
+        accerString+= bestaccers.length>1?'. These players SSed the map!':'. This player SSed the map!';
+    }
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
     const noMissString = no_missers.length!=0?'Players who sliderbroke: '+no_missers.join(", "):'';
     const fcInstr=(fcers.length!=0)?'If any players get full combo (FC), mention them.':'';
