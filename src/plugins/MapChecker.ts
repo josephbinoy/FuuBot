@@ -146,7 +146,14 @@ export class MapChecker extends LobbyPlugin {
     }
     this.validator = new MapValidator(this.option, this.logger, this.lobby);
     this.defaultIds = this.validator.LoadFilters('./maplists/default_map_ids.txt').map(Number).filter(id => !isNaN(id));
-    this.initializeLimits();
+    if (this.option.dynamic_overplayed_map_checker.enabled) {
+      this.weeklyLimit = this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit;
+      this.monthlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit;
+      this.yearlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_yearly_limit;
+      this.alltimeLimit = this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit;
+      this.updateLimits();
+      this.scheduleDailyLimitUpdate();
+    }
     this.registerEvents();
     if(process.env.HOST_NAME==='greatmcgamer'){
       this.websiteLinks = {
@@ -159,12 +166,7 @@ export class MapChecker extends LobbyPlugin {
     }
   }
 
-  private async initializeLimits() {
-    if (!this.option.dynamic_overplayed_map_checker.enabled) return;
-    this.weeklyLimit = this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit;
-    this.monthlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit;
-    this.yearlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_yearly_limit;
-    this.alltimeLimit = this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit;
+  private async updateLimits() {
     try {
       const limits: MapCount = await getLimits();
       if (limits.weeklyCount!==999){
@@ -187,6 +189,13 @@ export class MapChecker extends LobbyPlugin {
     catch (error) {
       this.logger.error('@MapChecker#updateLimits'+error);
     }
+  }
+
+  private scheduleDailyLimitUpdate() {
+    setInterval(() => {
+      this.updateLimits();
+    }, 24 * 60 * 60 * 1000); // 24 hours
+    this.logger.info('Scheduled daily limit update');
   }
 
   private addPickAndUpdateCount(pick: PickEntry, hasPicked:boolean): void {
@@ -1109,16 +1118,16 @@ export class MapValidator {
       d_length = `upto ${secToTimeNotation(this.option.length_max)}`;
     }
     if(d_length) desc+=` | Length: ${d_length}`;
-    let d_gamemode = ` | Mode: ${this.option.gamemode.officialName}`;
     if (this.option.gamemode !== PlayMode.Osu) {
+      let d_gamemode = ` | Mode: ${this.option.gamemode.officialName}`;
       if (this.option.allow_convert) {
         d_gamemode += ' (Converts allowed)';
       }
       else {
         d_gamemode += ' (Converts disallowed)';
       }
+      desc+=d_gamemode;
     }
-    desc+=d_gamemode;
     return desc;
   }
 
