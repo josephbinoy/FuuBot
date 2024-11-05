@@ -28,12 +28,16 @@ export async function getSummary(
     if (mapDescriptionString != '') {
         mapDescriptionString = `Here is some info about the map: ${mapDescriptionString}`;
     }
-    const comboGameString = (leaderboard.length>4 && leaderboard[0].acc < avg_acc-2) ? 'Given the winner had below average accuracy, the match was an example of the phrase "osu is a combo game"' : '';
+    const comboGameString = (leaderboard.length>4 && leaderboard[0].acc < avg_acc-2) ? 'Given the winner had below average accuracy, the match showed that "osu is a combo game"' : '';
     const modString = (modsUsed)?'Mods are mentioned only for top players':'';
-    let accerString = bestaccers.join(", ");
-    if (best_acc == 100) {
-        accerString+= bestaccers.length>1?'. These players SSed the map!':'. This player SSed the map!';
+    let accerString =`Highest Accuracy: ${bestaccers.join(", ")}`;
+    if (best_acc === 100) {
+        accerString += ' SSed the map (perfect accuracy)';
     }
+    else {
+        accerString += ` with an accuracy of ${best_acc}%`;
+    }
+    accerString+=` (Lobby average: ${avg_acc}%).`
     const fcerString = fcers.length!=0?'Players who got FC: '+fcers.join(", "):'';
     const noMissString = no_missers.length!=0?'Players who sliderbroke: '+no_missers.join(", "):'';
     const fcInstr=(fcers.length!=0)?'If any players get full combo (FC), mention them.':'';
@@ -53,7 +57,7 @@ export async function getSummary(
         {noMissString}
         {oneMissString}
         {almostFCString}
-        Highest accuracy: {best_acc}% by {accerString} (Lobby average: {avg_acc}%)
+        {accerString}
         Match Winner: {winner}
         {comboGameString}
         {streakString}
@@ -69,8 +73,6 @@ export async function getSummary(
         modString:modString,
         leaderboardString:leaderboardString,
         fcerString:fcerString,
-        best_acc:best_acc,
-        avg_acc:avg_acc,
         mapDifficultyString:mapDifficultyString,
         mapDescriptionString:mapDescriptionString,
         accerString:accerString,
@@ -105,16 +107,16 @@ function getLeaderboardString(leaderboard: PromptScore[]): [string, boolean] {
 
 function getMapDifficultyString(avg_combo: number, avg_acc: number, fail_count: number): string {
     if (avg_acc >= 95 || avg_combo >= 80) {
-        return `Players breezed through the map. `;
+        return `Players performed well, breezing through the map. `;
     }
     if (fail_count >= 60) {
         return `The map was difficult with only ${(100 - fail_count).toFixed(0)}% of players passing. `;
     }
     if (avg_acc <= 80) {
-        return `The map was very challenging to play. `;
+        return `The map was very difficult to play. `;
     }
     if (avg_combo <= 20) {
-        return `The map was difficult to score and combo. `;
+        return `The map was hard to combo on. `;
     }
     return "";
 }
@@ -125,7 +127,7 @@ function getMapDescriptionString(ar: number, bpm:number, cs: number, length: num
         description+=`The map was very fast paced, requiring quick aim and tapping. `;
     }
     if (length && length >= 330) {
-        description+= `It was a long map, requiring stamina and consistency. `;
+        description+= `It was a long map, requiring more consistency. `;
     }
     if (ar && ar >= 9.6) {
         description+= `The map had high AR, requiring fast reflexes. `;
