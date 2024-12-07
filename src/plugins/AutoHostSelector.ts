@@ -266,7 +266,15 @@ export class AutoHostSelector extends LobbyPlugin {
       this.changeHost();
       this.raiseOrderChanged('orderd');
     }
-    this.lobby.SendMessage("The host queue was rearranged due to reconnection. You can check the current order with !queue command.");
+    let message = '';
+    if (this.lobby.isBanchoTimingOut) {
+      message = "Notice: Bot is currently facing connection issues and may continue to do so for a while. The host queue has been rearranged. You can check the current order with !queue command";
+    }
+    else {
+      message = "Notice: The host queue was rearranged due to reconnection. You can check the current order with !queue command";
+    }
+    this.lobby.isBanchoTimingOut = false;
+    this.lobby.SendMessage(message);
   }
 
   private onChatCommand(player: Player, command: string, param: string): void {

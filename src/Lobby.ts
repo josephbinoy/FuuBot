@@ -39,6 +39,8 @@ export interface LobbyOption {
 export class Lobby {
   // Members
   dbClient: Database | null = null;
+  lastNetErrorTimestamp: number = 0;
+  isBanchoTimingOut: boolean = false;
   lastDbUpdateTime: number = 0;
   option: LobbyOption;
   ircClient: IIrcClient;
@@ -706,6 +708,11 @@ export class Lobby {
 
   RaiseNetError(err: Error): void {
     this.logger.error(`@Lobby#raiseNetError\n${err.message}\n${err.stack}`);
+    const now = Date.now();
+    if (now - this.lastNetErrorTimestamp < 15*60*1000) {
+      this.isBanchoTimingOut = true;
+    }
+    this.lastNetErrorTimestamp = now;
     this.NetError.emit(err);
   }
 
