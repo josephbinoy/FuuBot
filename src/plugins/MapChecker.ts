@@ -525,8 +525,11 @@ export class MapChecker extends LobbyPlugin {
         let wc = this.weeklyCount;
         let ac = this.alltimeCount;
         if(bufferRecentPick){
-          wc = this.weeklyCount++;
-          ac = this.alltimeCount++;
+          const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, bufferRecentPick.beatmapId, bufferRecentPick.pickerId);
+          if (!hasPicked) {
+            wc = this.weeklyCount++;
+            ac = this.alltimeCount++;
+          }
           let name = "";
           const user = await WebApiClient.getUser(bufferRecentPick.pickerId);
           if (user)
