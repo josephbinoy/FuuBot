@@ -46,9 +46,9 @@ export class MiscLoader extends LobbyPlugin {
         this.checkMirror(this.lobby.mapId);
       }
     }
-    // else if(command === '!skills') {
-    //   this.handleSkillsCommand(player, param);
-    // }
+    else if(command === '!skills') {
+      this.handleSkillsCommand(player, param);
+    }
     else if(command === '!rs') {
       this.handleRecentScoreCommand(player);
     }

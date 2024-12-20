@@ -522,7 +522,11 @@ export class MapChecker extends LobbyPlugin {
       let statMsg;
       if (this.option.dynamic_overplayed_map_checker.enabled && this.lobby.dbClient && this.playingMap){
         const bufferRecentPick = await this.checkBufferForMap(this.playingMap.beatmapset_id, this.lobby.host?.id || 0);
+        let wc = this.weeklyCount;
+        let ac = this.alltimeCount;
         if(bufferRecentPick){
+          wc = this.weeklyCount++;
+          ac = this.alltimeCount++;
           let name = "";
           const user = await WebApiClient.getUser(bufferRecentPick.pickerId);
           if (user)
@@ -536,7 +540,7 @@ export class MapChecker extends LobbyPlugin {
           statMsg = await getMapStats(this.lobby.dbClient, this.playingMap.beatmapset_id);
         }
         if(statMsg){
-          this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has been picked by ${this.weeklyCount} player${this.weeklyCount == 1 ? '' : 's'} past week and ${this.alltimeCount} all time (${statMsg})`);
+          this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has been picked by ${wc} player${wc == 1 ? '' : 's'} past week and ${ac} all time (${statMsg})`);
         }
         else if(statMsg === null){
           this.lobby.SendMessage(`[https://osu.ppy.sh/b/${this.playingMap.id} ${this.playingMap.beatmapset?.title}] has never been picked before`);
