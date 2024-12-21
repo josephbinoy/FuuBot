@@ -527,8 +527,8 @@ export class MapChecker extends LobbyPlugin {
         if(bufferRecentPick){
           const hasPicked = await hasPlayerPickedMap(this.lobby.dbClient, bufferRecentPick.beatmapId, bufferRecentPick.pickerId);
           if (!hasPicked) {
-            wc = this.weeklyCount++;
-            ac = this.alltimeCount++;
+            wc = this.weeklyCount+1;
+            ac = this.alltimeCount+1;
           }
           let name = "";
           const user = await WebApiClient.getUser(bufferRecentPick.pickerId);
