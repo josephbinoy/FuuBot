@@ -5,7 +5,7 @@ Also referred matte-ek's [bot](https://github.com/matte-ek/BanchoMultiplayerBot)
 - Overplayed maps like Sound Chimera, Glory Days or obnoxious rap/phonk maps
 - AFK hosts, chat spammers
 - That guy who always puts dt global
-- Dead lobbies were nobody says anything?
+- Dead lobbies where nobody says anything?
 ## Say no more. FuuBot is here. Find the regular features [here](#Features)
 
 ## Features I added:
