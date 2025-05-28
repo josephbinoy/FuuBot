@@ -76,7 +76,7 @@ export class AskBot extends LobbyPlugin {
     
     const customPrompt = PromptTemplate.fromTemplate(template)
     
-    const llm = new ChatOpenAI({ modelName: "gpt-4o-mini", temperature: 0 });
+    const llm = new ChatOpenAI({ modelName: "gpt-4.1-mini", temperature: 0 });
 
     //old method when only have question and context
     // const chain = RunnableSequence.from([

@@ -17,6 +17,9 @@ export type MapCheckerOption = {
   enabled: boolean;
   dynamic_overplayed_map_checker:{
     enabled: boolean,
+    weekly_threshold: number,
+    monthly_threshold: number,
+    yearly_threshold: number,
     pick_count_weekly_limit: number,
     pick_count_monthly_limit: number,
     pick_count_yearly_limit: number,
@@ -147,9 +150,18 @@ export class MapChecker extends LobbyPlugin {
     this.validator = new MapValidator(this.option, this.logger, this.lobby);
     this.defaultIds = this.validator.LoadFilters('./maplists/default_map_ids.txt').map(Number).filter(id => !isNaN(id));
     if (this.option.dynamic_overplayed_map_checker.enabled) {
-      this.weeklyLimit = this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit;
-      this.monthlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit;
-      this.yearlyLimit = this.option.dynamic_overplayed_map_checker.pick_count_yearly_limit;
+      this.weeklyLimit = Math.max(
+        this.option.dynamic_overplayed_map_checker.weekly_threshold ?? 0,
+        this.option.dynamic_overplayed_map_checker.pick_count_weekly_limit ?? 999
+      );
+      this.monthlyLimit = Math.max(
+        this.option.dynamic_overplayed_map_checker.monthly_threshold ?? 0,
+        this.option.dynamic_overplayed_map_checker.pick_count_monthly_limit ?? 999
+      );
+      this.yearlyLimit = Math.max(
+        this.option.dynamic_overplayed_map_checker.yearly_threshold ?? 0,
+        this.option.dynamic_overplayed_map_checker.pick_count_yearly_limit ?? 999
+      );
       this.alltimeLimit = this.option.dynamic_overplayed_map_checker.pick_count_alltime_limit;
       this.updateLimits();
       this.scheduleDailyLimitUpdate();
@@ -421,7 +433,7 @@ export class MapChecker extends LobbyPlugin {
           return;
         }
         else if (this.option.star_max > 0 && this.option.star_max < starRating) {
-          this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation. (${starRating}* > ${this.option.star_min}*)`);
+          this.lobby.SendMessage(`!mp abort\n!mp mods Freemod\nMatch was aborted because host tried to pick a map above regulation. (${starRating}* > ${this.option.star_max}*)`);
           return;
         }
         if (this.option.length_min > 0 && attributes.length < this.option.length_min) {

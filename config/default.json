@@ -61,6 +61,9 @@
     "enabled": true,
     "dynamic_overplayed_map_checker":{
       "enabled": false,
+      "weekly_threshold": 0,
+      "monthly_threshold": 0,
+      "yearly_threshold": 0,
       "pick_count_weekly_limit": 999,
       "pick_count_monthly_limit": 999,
       "pick_count_yearly_limit": 999,
