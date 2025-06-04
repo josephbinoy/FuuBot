@@ -347,7 +347,7 @@ export class AutoHostSelector extends LobbyPlugin {
       const playerName = match[1];
       let gotKicked = false;
       if (this.lobby.Includes(playerName)) {
-          this.lobby.SendMessage(`!mp ban ${escapeUserName(playerName)}`);
+          this.lobby.SendMessage(`!mp ban ${playerName}`);
           gotKicked = true;
       }
       const player = this.lobby.GetOrMakePlayer(playerName);

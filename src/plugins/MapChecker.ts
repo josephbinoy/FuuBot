@@ -1107,8 +1107,18 @@ export class MapValidator {
       const list = this.listsObject.array_filters.mappers[listType];
       if (!list.includes(mapperName)) {
         list.push(mapperName);
-        fs.writeFileSync(this.lobbyInstance.option.list_config_path, JSON.stringify(this.listsObject, null, 2));
-        this.lobbyInstance.SendPrivateMessage(`Mapper [${mapperName}] has been added to ${listType} list.`, ownerName);
+        fs.writeFile(
+          this.lobbyInstance.option.list_config_path,
+          JSON.stringify(this.listsObject, null, 2),
+          'utf-8',
+          err => {
+            if (err) {
+              this.logger.error('Failed to update list file:', err);
+            } else {
+              this.lobbyInstance.SendPrivateMessage(`Mapper [${mapperName}] has been added to ${listType} list.`, ownerName);
+            }
+          }
+        );
       } else {
         this.lobbyInstance.SendPrivateMessage(`Mapper [${mapperName}] is already in the ${listType} list.`, ownerName);
       }
@@ -1121,8 +1131,18 @@ export class MapValidator {
       const list = this.listsObject.array_filters.artists[listType];
       if (!list.includes(artistName)) {
         list.push(artistName);
-        fs.writeFileSync(this.lobbyInstance.option.list_config_path, JSON.stringify(this.listsObject, null, 2));
-        this.lobbyInstance.SendPrivateMessage(`Artist [${artistName}] has been added to ${listType} list.`, ownerName);
+        fs.writeFile(
+          this.lobbyInstance.option.list_config_path,
+          JSON.stringify(this.listsObject, null, 2),
+          'utf-8',
+          err => {
+            if (err) {
+              this.logger.error('Failed to update list file:', err);
+            } else {
+              this.lobbyInstance.SendPrivateMessage(`Artist [${artistName}] has been added to ${listType} list.`, ownerName);
+            }
+          }
+        );
       } else {
         this.lobbyInstance.SendPrivateMessage(`Artist [${artistName}] is already in the ${listType} list.`, ownerName);
       }
