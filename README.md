@@ -95,6 +95,8 @@ Where C is a constant that can be specified in the config file and L is the leng
 
 |Command|Description|Example|
 |:--|:--|:--|
+|`*add <list>`|Adds the current map to the map list. List is either 'default' or 'black' |`*add default`|
+|`*remove <list>`|Removes the current map from the map list. List is either 'default' or 'black' |`*remove black`|
 |`*start`|Forces the match to start.||
 |`*skip`|Forces current host to skip.||
 |`*order [players list]`| Reorders the queue in specified order. |`*order p1, p2, p3`|
@@ -121,6 +123,7 @@ Where C is a constant that can be specified in the config file and L is the leng
 |`*regulation disallow_convert` | Disallows conversion of maps for alternate game modes. | `*regulation disallow_convert`|
 |`*denylist add [username]` | Blacklists a player. | `*denylist add bad_guy` |
 |`*denylist remove [username]` | Removes a player from blacklist. | `*denylist remove bad_guy` |
+|`*permaban <username>` | Permanently bans a player from the bot. Can only be used as PM to bot. | `*permaban bad_guy` |
 
 Note: Administrator commands are also available on the cli. Here are examples of Administrator commands using cli:
 

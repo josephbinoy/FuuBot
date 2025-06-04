@@ -33,7 +33,8 @@ export interface LobbyOption {
   transferhost_timeout_ms: number
   command_list: string,
   command_list_cooltime_ms: number,
-  db_path: string
+  db_path: string,
+  list_config_path: string,
 }
 
 export class Lobby {
@@ -97,6 +98,7 @@ export class Lobby {
   NetError = new TypedEvent<Error>();
   PlayerChated = new TypedEvent<{ player: Player, message: string }>();
   ReceivedChatCommand = new TypedEvent<{ player: Player, command: string, param: string }>();
+  ReceivedPrivateCommand = new TypedEvent<{ user: Player, command: string, param: string }>();
   PluginMessage = new TypedEvent<{ type: string, args: string[], src: LobbyPlugin | null }>();
   SentMessage = new TypedEvent<{ message: string }>();
   ReceivedBanchoResponse = new TypedEvent<{ message: string, response: BanchoResponse }>();
@@ -480,6 +482,12 @@ export class Lobby {
       const p = this.GetPlayer(from);
       if (p) {
         if (parser.IsChatCommand(message)) {
+          if (message === '!info' || message === '!help') {
+            this.showInfoMessage();
+          }
+          if (message === '!commands'){
+            this.sendCommandListPM(p);
+          }
           this.RaiseReceivedChatCommand(p, message);
         }
         this.PlayerChated.emit({ player: p, message });
@@ -504,11 +512,12 @@ export class Lobby {
         }
       }
     } else {
-      const user = this.GetPlayer(from);
-      if (!user) return;
+      if (!parser.IsChatCommand(message)) return;
+      let user = this.GetOrMakePlayer(from);
       if ((message === '!info' || message === '!help') && this.players.has(user)) {
         this.sendInfoMessagePM(user);
       }
+      this.RaiseReceivedPrivateCommand(user, message);
     }
   }
 
@@ -621,13 +630,14 @@ export class Lobby {
     this.logger.trace(`Executing a command by ${player.name}: ${message}`);
     if (player.isReferee && message.startsWith('!mp')) return;
     const { command, param } = parser.ParseChatCommand(message);
-    if (command === '!info') {
-      this.showInfoMessage();
-    }
-    if (command === '!commands'){
-      this.sendCommandListPM(player);
-    }
     this.ReceivedChatCommand.emit({ player, command, param });
+  }
+
+  RaiseReceivedPrivateCommand(user: Player, message: string): void {
+    if (!user.isAuthorized) return;
+    this.logger.trace(`Executing a command by authorized user ${user.name}: ${message}`);
+    const { command, param } = parser.ParseChatCommand(message);
+    this.ReceivedPrivateCommand.emit({ user, command, param });
   }
 
   // #endregion

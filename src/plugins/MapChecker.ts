@@ -34,23 +34,7 @@ export type MapCheckerOption = {
       cs: [number, number],
       play_count_yearly_average: [number, number],
       stamina_formula_c_value: number,
-      year: [number, number],
-      languages: string[],
-      genres: string[],
-      statuses: string[],
-      tags: {
-        genre_tags: string[],
-        allow: string[],
-        deny: string[]
-      }
-      artists: {
-        allow: string[],
-        deny: string[]
-      }
-      mappers: {
-        allow: string[],
-        deny: string[]
-      }
+      year: [number, number]
       allow_nsfw: boolean
   };
   num_violations_allowed: number;
@@ -60,6 +44,7 @@ export type MapCheckerOption = {
   length_max: number;
   gamemode: PlayMode;
   allow_convert: boolean;
+  default_maps_id_path: string,
   blacklisted_mapset_id_path: string,
   blacklisted_mapset_names_path: string,
   map_description: string;
@@ -76,6 +61,30 @@ export interface FixedAttributes {
   hp: number;
   length: number;
   hit_length: number
+}
+
+export type ListConfig = {
+  array_filters: ArrayFilters,
+  player_deny_list : string[],
+}
+
+export type ArrayFilters = {
+    languages: string[],
+    genres: string[],
+    statuses: string[],
+    tags: {
+      genre_tags: string[],
+      allow: string[],
+      deny: string[]
+    }
+    artists: {
+      allow: string[],
+      deny: string[]
+    }
+    mappers: {
+      allow: string[],
+      deny: string[]
+    }
 }
 
 export class OperationQueue {
@@ -148,7 +157,7 @@ export class MapChecker extends LobbyPlugin {
       this.lobby.gameMode = this.option.gamemode;
     }
     this.validator = new MapValidator(this.option, this.logger, this.lobby);
-    this.defaultIds = this.validator.LoadFilters('./maplists/default_map_ids.txt').map(Number).filter(id => !isNaN(id));
+    this.defaultIds = this.validator.LoadFilters(this.option.default_maps_id_path).map(Number).filter(id => !isNaN(id));
     if (this.option.dynamic_overplayed_map_checker.enabled) {
       this.weeklyLimit = Math.max(
         this.option.dynamic_overplayed_map_checker.weekly_threshold ?? 0,
@@ -585,6 +594,22 @@ export class MapChecker extends LobbyPlugin {
           this.lastInvokedListCommand = currentTime;
           this.addToDefaultList(player.escaped_name);
         }
+        else if (params[0] === 'mapper' || params[0] === 'artist') {
+          if (currentTime - this.lastInvokedListCommand < 10000) {
+            this.lobby.SendPrivateMessageWithCoolTime(`The add command is on cooldown. Please wait ${Math.ceil((10000 - (currentTime - this.lastInvokedListCommand)) / 1000)} seconds`, player.escaped_name, 'add_warning', 5000);
+            return;
+          }
+          if (params.length < 2) {
+            this.lobby.SendPrivateMessage('Please mention which list you want to add mapper to- deny or allow list.', player.escaped_name);
+            return;
+          }
+          if (params[1] !== 'deny' && params[1] !== 'allow') {
+            this.lobby.SendPrivateMessage('Please mention which list you want to add mapper to- deny or allow list.', player.escaped_name);
+            return;
+          }
+          this.lastInvokedListCommand = currentTime;
+          this.validator.AddToDenyOrAllowList(this.playingMap, params[0], params[1], player.escaped_name);
+        }
         return;
       }
       else if (command === '*remove'){
@@ -647,7 +672,7 @@ export class MapChecker extends LobbyPlugin {
     if(mapId === 0) return;
     let  mapName = this.playingMap?.beatmapset?.title || '';
     mapName += ` [${this.playingMap?.version || ''}]`;
-    fs.appendFile('./maplists/default_map_ids.txt', `\n${mapId}`, (err) => {
+    fs.appendFile(this.option.default_maps_id_path, `\n${mapId}`, (err) => {
       if (err) {
         this.logger.error(`Failed to add [https://osu.ppy.sh/b/${mapId} ${mapName}] to default list`, err);
       } else {
@@ -665,7 +690,7 @@ export class MapChecker extends LobbyPlugin {
     const initialLength = this.defaultIds.length;
     this.defaultIds = this.defaultIds.filter(defaultId => defaultId !== mapId);
     if(this.defaultIds.length === initialLength) return;
-    fs.writeFile('./maplists/default_map_ids.txt', this.defaultIds.join('\n'), (err) => {
+    fs.writeFile(this.option.default_maps_id_path, this.defaultIds.join('\n'), (err) => {
       if (err) {
         this.logger.error(`Failed to remove [https://osu.ppy.sh/b/${mapId} ${mapName}] from default list`, err);
       } else {
@@ -1008,6 +1033,7 @@ export class MapValidator {
   blacklistedNames: string[]=[];
   blackedMap: Beatmap | undefined=undefined;
   lobbyInstance: Lobby;
+  listsObject: ListConfig;
   //TODO: Create own type for languages and genres!!
   // languages: string[] = ['English', 'Chinese', 'French', 'German', 'Italian', 'Japanese', 'Korean', 'Spanish', 'Swedish', 'Russian', 'Polish', 'Instrumental', 'Unspecified', 'Other'];
   // genres: string[] = ['Unspecified', 'Video Game', 'Anime', 'Rock', 'Pop', 'Other', 'Novelty', 'Hip Hop', 'Electronic', 'Metal', 'Classical', 'Folk', 'Jazz'];
@@ -1019,6 +1045,38 @@ export class MapValidator {
     this.blacklistedIds = this.LoadFilters(this.option.blacklisted_mapset_id_path).map(Number).filter(id => !isNaN(id));
     this.blacklistedNames = this.LoadFilters(this.option.blacklisted_mapset_names_path);
     this.lobbyInstance = lobbyInstance;
+    this.listsObject = this.LoadListFromFile(this.lobbyInstance.option.list_config_path);
+  }
+
+  LoadListFromFile(filePath: string): ListConfig {
+    try {
+      const data = fs.readFileSync(filePath, 'utf-8');
+      const listsObject = JSON.parse(data) as ListConfig;
+      return listsObject;
+    } catch (error) {
+      this.logger.error(`Failed to load array filters from file: ${filePath}`, error);
+      return {
+        array_filters: {
+          languages: [],
+          genres: [],
+          statuses: [],
+          tags: {
+            genre_tags: [],
+            allow: [],
+            deny: []
+          },
+          artists: {
+            allow: [],
+            deny: []
+          },
+          mappers: {
+            allow: [],
+            deny: []
+          }
+        },
+        player_deny_list: []
+      };
+    }
   }
 
   LoadFilters(filePath: string): string[] {
@@ -1030,6 +1088,44 @@ export class MapValidator {
       return filters;
     } catch (error) {
       return [];
+    }
+  }
+//make async
+  AddToDenyOrAllowList(map: Beatmap | undefined,   target: 'mapper' | 'artist', listType: 'allow' | 'deny', ownerName: string) {
+    if (!map || !map.beatmapset) {
+      this.lobbyInstance.SendPrivateMessage('No map is currently being played.', ownerName);
+      return;
+    }
+    const mapsetId = map.beatmapset_id || 0;
+    if(mapsetId === 0) return;
+    if (target === 'mapper') {
+      const mapperName = map.beatmapset.creator || '';
+      if (mapperName === '') {
+        this.lobbyInstance.SendPrivateMessage('This map does not have a mapper name.', ownerName);
+        return;
+      }
+      const list = this.listsObject.array_filters.mappers[listType];
+      if (!list.includes(mapperName)) {
+        list.push(mapperName);
+        fs.writeFileSync(this.lobbyInstance.option.list_config_path, JSON.stringify(this.listsObject, null, 2));
+        this.lobbyInstance.SendPrivateMessage(`Mapper [${mapperName}] has been added to ${listType} list.`, ownerName);
+      } else {
+        this.lobbyInstance.SendPrivateMessage(`Mapper [${mapperName}] is already in the ${listType} list.`, ownerName);
+      }
+    } else if (target === 'artist') {
+      const artistName = map.beatmapset.artist || '';
+      if (artistName === '') {
+        this.lobbyInstance.SendPrivateMessage('This map does not have an artist name.', ownerName);
+        return;
+      }
+      const list = this.listsObject.array_filters.artists[listType];
+      if (!list.includes(artistName)) {
+        list.push(artistName);
+        fs.writeFileSync(this.lobbyInstance.option.list_config_path, JSON.stringify(this.listsObject, null, 2));
+        this.lobbyInstance.SendPrivateMessage(`Artist [${artistName}] has been added to ${listType} list.`, ownerName);
+      } else {
+        this.lobbyInstance.SendPrivateMessage(`Artist [${artistName}] is already in the ${listType} list.`, ownerName);
+      }
     }
   }
 
@@ -1186,13 +1282,13 @@ export class MapValidator {
       const stamina_desc = staminaParts.join(' | ');
       desc += `Stamina Limit (CPS): ${stamina_desc}`;
     }
-    if(this.option.advanced_filters.languages.length>0){
+    if(this.listsObject.array_filters.languages.length>0){
       if(desc) desc+="\n";
-      desc += `Languages: ${this.option.advanced_filters.languages.join(', ')}`;
+      desc += `Languages: ${this.listsObject.array_filters.languages.join(', ')}`;
     }
-    if(this.option.advanced_filters.genres.length>0){
+    if(this.listsObject.array_filters.genres.length>0){
       if(desc) desc+="\n";
-      desc += `Genres: ${this.option.advanced_filters.genres.join(', ')}`;
+      desc += `Genres: ${this.listsObject.array_filters.genres.join(', ')}`;
     }
     if(!this.option.advanced_filters.allow_nsfw){
       if(desc) desc+="\n";
@@ -1215,10 +1311,10 @@ export class MapValidator {
 
   checkBlackList(map: Beatmap): string {
       //tags
-      if(this.option.advanced_filters.tags.deny.length>0){
+      if(this.listsObject.array_filters.tags.deny.length>0){
         if (map.beatmapset?.tags) {
           let words = map.beatmapset.tags.split(' ');
-          let denyTags = this.option.advanced_filters.tags.deny.map(tag => tag.toLowerCase());
+          let denyTags = this.listsObject.array_filters.tags.deny.map(tag => tag.toLowerCase());
           if(words.some(word => denyTags.includes(word.toLowerCase()))){
             const bannedWord = words.find(word => denyTags.includes(word.toLowerCase()));
             return `${bannedWord} maps are not allowed in the lobby`;
@@ -1227,8 +1323,8 @@ export class MapValidator {
       }
       
       //mappers
-      if(this.option.advanced_filters.mappers.deny.length>0){
-        let mappers = this.option.advanced_filters.mappers.deny.map(mapper => mapper.toLowerCase());
+      if(this.listsObject.array_filters.mappers.deny.length>0){
+        let mappers = this.listsObject.array_filters.mappers.deny.map(mapper => mapper.toLowerCase());
         if (map.beatmapset?.creator) {
           let mapperLower=map.beatmapset?.creator.toLowerCase();
           if (mappers.includes(mapperLower)){
@@ -1242,10 +1338,10 @@ export class MapValidator {
       }
   
       //artists
-      if(this.option.advanced_filters.artists.deny.length>0){
+      if(this.listsObject.array_filters.artists.deny.length>0){
         if(map.beatmapset?.artist){
           let artistLower = map.beatmapset?.artist.toLowerCase();
-          let artists = this.option.advanced_filters.artists.deny;
+          let artists = this.listsObject.array_filters.artists.deny;
           if (artists.some(artist => artistLower.includes(artist.toLowerCase()))){
             return `songs by this artist are not allowed in the lobby`;
           }
@@ -1330,9 +1426,9 @@ export class MapValidator {
     }
 
     //language
-    if(this.option.advanced_filters.languages.length>0){
-      let langs = this.option.advanced_filters.languages.map(lang => lang.toLowerCase());
-      let allowedLangs = this.option.advanced_filters.languages.join(', ');
+    if(this.listsObject.array_filters.languages.length>0){
+      let langs = this.listsObject.array_filters.languages.map(lang => lang.toLowerCase());
+      let allowedLangs = this.listsObject.array_filters.languages.join(', ');
       if (map.beatmapset?.language?.name && !langs.includes(map.beatmapset?.language?.name.toLowerCase())){
         if(map.beatmapset?.language?.name === 'Unspecified'){
           if(langs.includes('japanese')){
@@ -1350,9 +1446,9 @@ export class MapValidator {
     }
 
     //genre_tags
-    if(this.option.advanced_filters.tags.genre_tags.length>0){
+    if(this.listsObject.array_filters.tags.genre_tags.length>0){
       if (map.beatmapset?.tags){
-        let genre_tags = this.option.advanced_filters.tags.genre_tags.flatMap(tag => tag.toLowerCase().split(' '));
+        let genre_tags = this.listsObject.array_filters.tags.genre_tags.flatMap(tag => tag.toLowerCase().split(' '));
         let words = map.beatmapset?.tags.split(' ').map(word => word.toLowerCase());
         if(words.some(word => genre_tags.includes(word.toLowerCase()))){
           genreFoundInTags = true;
@@ -1361,10 +1457,10 @@ export class MapValidator {
     }
 
     //genres
-    if(this.option.advanced_filters.genres.length>0){
+    if(this.listsObject.array_filters.genres.length>0){
       if(map.beatmapset?.genre?.name){
-        let allowedGenres = this.option.advanced_filters.genres.join(', ');
-        let genresToCheck = this.option.advanced_filters.genres.map(genre => genre.toLowerCase());
+        let allowedGenres = this.listsObject.array_filters.genres.join(', ');
+        let genresToCheck = this.listsObject.array_filters.genres.map(genre => genre.toLowerCase());
         if(!genreFoundInTags && map.beatmapset?.genre?.name === 'Unspecified'){
             return `beatmap genre couldn't be determined (missing metadata)\nType !force to pick the map anyway`;
         }
@@ -1375,18 +1471,18 @@ export class MapValidator {
     }
 
     //statuses
-    if(this.option.advanced_filters.statuses.length>0){
-      let statuses = this.option.advanced_filters.statuses;
+    if(this.listsObject.array_filters.statuses.length>0){
+      let statuses = this.listsObject.array_filters.statuses;
       let allowedStatuses = statuses.join(', ');
-      if (map.beatmapset?.status && !this.option.advanced_filters.statuses.includes(map.beatmapset?.status)){
+      if (map.beatmapset?.status && !this.listsObject.array_filters.statuses.includes(map.beatmapset?.status)){
         return `only ${allowedStatuses} maps are allowed in the lobby\nType !force to pick the map anyway`;
       }
     }
 
     //tags
-    if(this.option.advanced_filters.tags.allow.length>0){
+    if(this.listsObject.array_filters.tags.allow.length>0){
       if (map.beatmapset?.tags){
-        let tags = this.option.advanced_filters.tags.allow.map(tag => tag.toLowerCase());
+        let tags = this.listsObject.array_filters.tags.allow.map(tag => tag.toLowerCase());
         let words = map.beatmapset?.tags.split(' ').map(word => word.toLowerCase());
         if(!words.some(word => tags.includes(word.toLowerCase()))){
           return `beatmap with such tags are not allowed in the lobby\nType !force to pick the map anyway`;
@@ -1398,9 +1494,9 @@ export class MapValidator {
     }
 
     //mappers
-    if(this.option.advanced_filters.mappers.allow.length>0){
-      let mappers = this.option.advanced_filters.mappers.allow.map(mapper => mapper.toLowerCase());
-      let allowedMappers = this.option.advanced_filters.mappers.allow.join(', ');
+    if(this.listsObject.array_filters.mappers.allow.length>0){
+      let mappers = this.listsObject.array_filters.mappers.allow.map(mapper => mapper.toLowerCase());
+      let allowedMappers = this.listsObject.array_filters.mappers.allow.join(', ');
       let diffMapper=map.version.toLowerCase();
       if(!mappers.some(mapper => diffMapper.includes(mapper)) && map.beatmapset?.creator){
         let mapperLower=map.beatmapset.creator.toLowerCase();
@@ -1411,10 +1507,10 @@ export class MapValidator {
     }
 
     //artists
-    if(this.option.advanced_filters.artists.allow.length>0){
+    if(this.listsObject.array_filters.artists.allow.length>0){
       if(map.beatmapset?.artist){
         let mapArtists = map.beatmapset?.artist.toLowerCase();
-        let artists = this.option.advanced_filters.artists.allow;
+        let artists = this.listsObject.array_filters.artists.allow;
         let allowedArtists = artists.join(', ');
         if (!artists.some(artist => mapArtists.includes(artist.toLowerCase()))){
           return `only ${allowedArtists} maps are allowed in the lobby\nType !force to pick the map anyway`;

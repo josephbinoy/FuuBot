@@ -1,17 +1,18 @@
 import { Lobby } from '../Lobby';
 import { BanchoResponseType } from '../parsers/CommandParser';
 import { MpSettingsResult } from '../parsers/MpSettingsParser';
-import { Player, revealUserName, disguiseUserName } from '../Player';
+import { Player, revealUserName, disguiseUserName, escapeUserName } from '../Player';
 import { Disposable, TypedEvent } from '../libs/TypedEvent';
 import { LobbyPlugin } from './LobbyPlugin';
 import { getConfig } from '../TypedConfig';
 import { getLogger } from '../Loggers';
+import { ListConfig } from './MapChecker';
+import fs from 'fs';
 
 export interface AutoHostSelectorOption {
   show_host_order_after_every_match: boolean;
   host_order_chars_limit: number;
   host_order_cooltime_ms: number;
-  deny_list: string[];
 }
 
 export type OrderChangeType = 'added' | 'removed' | 'rotated' | 'orderd';
@@ -63,15 +64,47 @@ export class AutoHostSelector extends LobbyPlugin {
   orderChanged = new TypedEvent<{ type: OrderChangeType }>();
   eventDisposers: Disposable[] = [];
   host_aborted: boolean = false;
+  listObject: ListConfig;
 
   constructor(lobby: Lobby, option: Partial<AutoHostSelectorOption> = {}) {
     super(lobby, 'AutoHostSelector', 'selector');
     this.option = getConfig(this.pluginName, option) as AutoHostSelectorOption;
-
-    if (Array.isArray(this.option.deny_list)) {
-      this.option.deny_list.map(s => this.lobby.GetOrMakePlayer(s)).forEach(p => DENY_LIST.addPlayer(p));
+    this.listObject = this.LoadListFromFile(this.lobby.option.list_config_path);
+    if (Array.isArray(this.listObject.player_deny_list)) {
+      this.listObject.player_deny_list.map(s => this.lobby.GetOrMakePlayer(s)).forEach(p => DENY_LIST.addPlayer(p));
     }
     this.registerEvents();
+  }
+
+  LoadListFromFile(filePath: string): ListConfig {
+    try {
+      const data = fs.readFileSync(filePath, 'utf-8');
+      const listsObject = JSON.parse(data) as ListConfig;
+      return listsObject;
+    } catch (error) {
+      this.logger.error(`Failed to load array filters from file: ${filePath}`, error);
+      return {
+        array_filters: {
+          languages: [],
+          genres: [],
+          statuses: [],
+          tags: {
+            genre_tags: [],
+            allow: [],
+            deny: []
+          },
+          artists: {
+            allow: [],
+            deny: []
+          },
+          mappers: {
+            allow: [],
+            deny: []
+          }
+        },
+        player_deny_list: []
+      };
+    }
   }
 
   private registerEvents(): void {
@@ -81,6 +114,7 @@ export class AutoHostSelector extends LobbyPlugin {
     this.eventDisposers.push(this.lobby.PlayerLeft.on(a => this.onPlayerLeft(a.player, a.fromMpSettings)));
     this.eventDisposers.push(this.lobby.HostChanged.on(a => this.onHostChanged(a.player)));
     this.eventDisposers.push(this.lobby.ReceivedChatCommand.on(a => this.onChatCommand(a.player, a.command, a.param)));
+    this.eventDisposers.push(this.lobby.ReceivedPrivateCommand.on(a => this.onPrivateCommand(a.user, a.command, a.param)));
     this.eventDisposers.push(this.lobby.PluginMessage.on(a => this.onPluginMessage(a.type, a.args, a.src)));
     this.eventDisposers.push(this.lobby.AbortedMatch.on(a => this.onMatchAborted(a.playersFinished, a.playersInGame)));
     this.eventDisposers.push(this.lobby.FixedSettings.on(a => this.onFixedSettings(a.result, a.playersIn, a.playersOut, a.hostChanged)));
@@ -301,6 +335,39 @@ export class AutoHostSelector extends LobbyPlugin {
         }
       }
     }
+  }
+
+  onPrivateCommand(user: Player, command: string, param: string): void {
+      if (command === '*permaban') {
+      const match = param.match(/^(\S+)$/);
+      if (!match) {
+        this.lobby.SendPrivateMessage('Invalid Name. Usage: *permaban <username> (no spaces allowed)', user.escaped_name);
+        return;
+      }
+      const playerName = match[1];
+      let gotKicked = false;
+      if (this.lobby.Includes(playerName)) {
+          this.lobby.SendMessage(`!mp ban ${escapeUserName(playerName)}`);
+          gotKicked = true;
+      }
+      const player = this.lobby.GetOrMakePlayer(playerName);
+      if (!this.listObject.player_deny_list.includes(player.name)) {
+        this.listObject.player_deny_list.push(player.name);
+        DENY_LIST.addPlayer(player);
+        const ename = user.escaped_name;
+        fs.writeFile(this.lobby.option.list_config_path, JSON.stringify(this.listObject, null, 2), 'utf-8',
+          err => {
+            if (err) {
+              this.logger.error('Failed to update deny list file:', err);
+            } else {
+              this.lobby.SendPrivateMessage(`${gotKicked?'Banned player from current session':'Did not find player in current lobby.'} Added player "${playerName}" to the deny list permanently.`, ename);
+            }
+          }
+        );
+      } else {
+        this.lobby.SendPrivateMessage(`Player "${playerName}" is already in the deny list. ${gotKicked?'Banned player from current sesssion.':'Did not find player in current lobby.'}`, user.escaped_name,);
+      }
+      }
   }
 
   private onDenylistAdded(name: string) {
