@@ -123,6 +123,8 @@ Where C is a constant that can be specified in the config file and L is the leng
 |`*regulation disallow_convert` | Disallows conversion of maps for alternate game modes. | `*regulation disallow_convert`|
 |`*denylist add [username]` | Blacklists a player. | `*denylist add bad_guy` |
 |`*denylist remove [username]` | Removes a player from blacklist. | `*denylist remove bad_guy` |
+|`*deny <attribute>`| Adds the attribute to the deny list. Only mapper or artist | `*deny mapper`|
+|`*allow <attribute>`| Adds the attribute to the allow list. Only mapper or artist | `*allow artist`|
 |`*permaban <username>` | Permanently bans a player from the bot. Can only be used as PM to bot. | `*permaban bad_guy` |
 
 Note: Administrator commands are also available on the cli. Here are examples of Administrator commands using cli:

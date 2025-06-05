@@ -28,7 +28,8 @@
   "AutoHostSelector": {
     "show_host_order_after_every_match": true,
     "host_order_chars_limit": 90,
-    "host_order_cooltime_ms": 15000
+    "host_order_cooltime_ms": 15000,
+    "deny_players_path": ""
   },
   "AutoStartTimer": {
     "enabled": true,
