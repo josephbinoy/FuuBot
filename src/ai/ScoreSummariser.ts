@@ -65,7 +65,7 @@ export async function getSummary(
         {previousSummary}
         `]
     ])
-    const llm = new ChatOpenAI({ modelName: "gpt-5-mini", temperature: 0.2 });
+    const llm = new ChatOpenAI({ modelName: "gpt-5-mini" });
 
     const chain =prompt.pipe(llm).pipe(new StringOutputParser());
 
